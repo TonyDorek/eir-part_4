@@ -33,8 +33,8 @@ X1d = [x1d;y1d];
 x2d = 2;
 y2d = 2;
 X2d = [x2d;y2d];
-x3d = 80;
-y3d = 10;
+x3d = 40;
+y3d = 60;
 X3d = [x3d; y3d];      
 
 x1d_dot = 0;
@@ -49,7 +49,7 @@ X3d_dot = [x3d_dot; y3d_dot];
 
 
 obj1 = [60, 30];    
-obj2 = [20, 40];    
-thr = 5;            
+obj2 = [45, 25];    
+thr = 2;            
 
 

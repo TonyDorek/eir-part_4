@@ -14,6 +14,9 @@ plot(x1d, y1d, '-x', 'MarkerSize', 8, 'LineWidth', 1.5);
 plot(x2d, y2d, '-x', 'MarkerSize', 8, 'LineWidth', 1.5);
 plot(x3d, y3d, '-x', 'MarkerSize', 8, 'LineWidth', 1.5);
 
+X1 = squeeze(out.X1.Data);
+X2 = squeeze(out.X2.Data);
+X3 = squeeze(out.X3.Data);
 
 h1 = plot(NaN, NaN, 'r', 'LineWidth', 2);
 h2 = plot(NaN, NaN, 'b', 'LineWidth', 2);
@@ -27,5 +30,5 @@ for i = 1:length(X1(1,:))
     set(h2, 'XData', X2(1,1:i), 'YData', X2(2,1:i));
     set(h3, 'XData', X3(1,1:i), 'YData', X3(2,1:i));
     drawnow;
-    pause(0.05);
+    pause(0.2);
 end
