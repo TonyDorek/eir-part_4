@@ -1,32 +1,32 @@
-clear;
-clc;
-
-%% === PARAMETRI INIZIALI ===
-n_robots = 5;           
-thr = 2;               
-
-kx = 0.6 * ones(1, n_robots);
-ky = 0.6 * ones(1, n_robots);
-
-for i = 1:n_robots
-    K{i} = [kx(i), 0;
-             0, ky(i)];
-end
-
-%% === POSIZIONI INIZIALI ===
-X0 = [  0, 102,  50, 160, 200;   
-        0,  56, -20,  40, 100];  
-
-%% === POSIZIONI DESIDERATE ===
-Xd = [102,   2,  40, 180, 220;    
-       56,   2,  60,  80, 120];   
-
-%% === DERIVATE DESIDERATE ===
-Xd_dot = zeros(2, n_robots);  
-
-%% === OSTACOLI ===
-obj1 = [60, 45];  
-obj2 = [30, 25];  
+% clear;
+% clc;
+% 
+% %% === PARAMETRI INIZIALI ===
+% n_robots = 5;           
+% thr = 2;               
+% 
+% kx = 0.6 * ones(1, n_robots);
+% ky = 0.6 * ones(1, n_robots);
+% 
+% for i = 1:n_robots
+%     K{i} = [kx(i), 0;
+%              0, ky(i)];
+% end
+% 
+% %% === POSIZIONI INIZIALI ===
+% X0 = [  0, 102,  50, 160, 200;   
+%         0,  56, -20,  40, 100];  
+% 
+% %% === POSIZIONI DESIDERATE ===
+% Xd = [102,   2,  40, 180, 220;    
+%        56,   2,  60,  80, 120];   
+% 
+% %% === DERIVATE DESIDERATE ===
+% Xd_dot = zeros(2, n_robots);  
+% 
+% %% === OSTACOLI ===
+% obj1 = [60, 45];  
+% obj2 = [30, 25];  
 
 %% === ANIMAZIONE ===
 figure; hold on; grid on; axis equal;
@@ -37,14 +37,16 @@ xlabel('X'); ylabel('Y');
 plot(obj1(1), obj1(2), '-s', 'MarkerSize', 10, 'MarkerFaceColor', 'red', 'MarkerEdgeColor', 'black');
 plot(obj2(1), obj2(2), '-s', 'MarkerSize', 10, 'MarkerFaceColor', 'blue', 'MarkerEdgeColor', 'black');
 
+colors = ['r','b','g','m','c'];
+
 % --- Posizioni iniziali ---
 for i = 1:n_robots
-    plot(X0(1,i), X0(2,i), '-o', 'MarkerFaceColor', 'k');
+    plot(X0(1,i), X0(2,i), '-o', 'MarkerFaceColor', colors(i));
 end
 
 % --- Posizioni finali ---
 for i = 1:n_robots
-    plot(Xd(1,i), Xd(2,i), '-x', 'MarkerSize', 8, 'LineWidth', 1.5);
+    plot(Xd(1,i), Xd(2,i), '-x', 'MarkerSize', 8, 'LineWidth', 1.5, 'MarkerFaceColor', colors(i));
 end
 
 % --- Traiettorie (da Simulink o simulazione) ---
@@ -55,17 +57,16 @@ X4 = squeeze(out.X4.Data);
 X5 = squeeze(out.X5.Data);
 
 % --- Handle delle traiettorie ---
-colors = ['r','b','g','m','c'];
 h = gobjects(1, n_robots);
 for i = 1:n_robots
     h(i) = plot(NaN, NaN, colors(i), 'LineWidth', 2);
 end
 
 % --- Legenda ---
-legend('Obj1','Obj2', ...
-       'Start1','Start2','Start3','Start4','Start5', ...
-       'Goal1','Goal2','Goal3','Goal4','Goal5', ...
-       'Traj1','Traj2','Traj3','Traj4','Traj5');
+% legend('Obj1','Obj2', ...
+%        'Start1','Start2','Start3','Start4','Start5', ...
+%        'Goal1','Goal2','Goal3','Goal4','Goal5', ...
+%        'Traj1','Traj2','Traj3','Traj4','Traj5');
 
 %% === ANIMAZIONE DINAMICA ===
 % (qui si suppone che tutti i vettori Xi abbiano stessa lunghezza)

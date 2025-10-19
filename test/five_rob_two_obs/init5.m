@@ -19,9 +19,8 @@ end
 X0 = [  0, 102,  50, 160, 200;   
         0,  56, -20,  40, 100];  
 
-Xd = [102,   2,  40, 180, 220;    
-       56,   2,  60,  80, 120];   
-
+Xd = [100,   2,  40, 40, 0;    
+       60,   4,  60,  40, 20];   
 
 Xd_dot = zeros(2, n_robots);  
 
@@ -30,7 +29,6 @@ for i = 1:n_robots
     eval(sprintf('X%dd_dot = Xd_dot(:,%d);', i, i)); % crea anche X1d_dot, ecc.
     eval(sprintf('X%02d = X0(:,%d);', i, i));       % opzionale: anche X01, X02, ecc.
 end
-
 
 obj1 = [60, 45];  
 obj2 = [30, 25];
