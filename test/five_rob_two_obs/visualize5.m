@@ -1,14 +1,17 @@
-%% === ANIMATIONS ===
+%% === OUTPUT VISUALIZATION ===
+
 figure; 
 
 subplot(1, 2, 1);
 
-hold on; grid on;% axis equal;
+hold on; grid on;
  
 set(gcf, 'Position', [250, 250, 1200, 500]); % [x, y, width, height]
 
 title('Safe multi-agent system: collision avoidance + connectivity maintenance');
 xlabel('x'); ylabel('y');
+
+colors = ['r','b','g','m','c'];
 
 % --- Obstacles ---
 plot(obj1(1), obj1(2), '-s', 'MarkerSize', 10, 'MarkerFaceColor', 'red', 'MarkerEdgeColor', 'black');
@@ -16,8 +19,6 @@ plot(obj2(1), obj2(2), '-s', 'MarkerSize', 10, 'MarkerFaceColor', 'blue', 'Marke
 
 text(obj1(1), obj1(2), 'obj1', 'HorizontalAlignment', 'left', 'VerticalAlignment', 'top');
 text(obj2(1), obj2(2), 'obj2', 'HorizontalAlignment', 'left', 'VerticalAlignment', 'top');
-
-colors = ['r','b','g','m','c'];
 
 % --- Initial positions ---
 for i = 1:n_robots
@@ -44,7 +45,7 @@ for i = 1:n_robots
     h(i) = plot(NaN, NaN, colors(i), 'LineWidth', 2);
 end
 
-% --- Legenda ---
+% --- Legenda --- % It slows down a lot the animations...
 % legend('Obj1','Obj2', ...
 %        'Start1','Start2','Start3','Start4','Start5', ...
 %        'Goal1','Goal2','Goal3','Goal4','Goal5', ...
@@ -58,7 +59,7 @@ for i = 1:length(X1(1,:))
     set(h(4), 'XData', X4(1,1:i), 'YData', X4(2,1:i));
     set(h(5), 'XData', X5(1,1:i), 'YData', X5(2,1:i));
     drawnow;
-    pause(0.2);
+    pause(0.1);
 end
 
 subplot(1, 2, 2); 
@@ -66,10 +67,9 @@ subplot(1, 2, 2);
 grid on;
 
 % --- Graph dynamics ---
-
 for i = 1:length(X1(1,:))
     [~,p] = create_graph([X1(:,i), X2(:,i), X3(:,i), X4(:,i), X5(:,i)],range, ...
         'Evolution of robot positions (nodes) and connections (edges)');
     drawnow;
-    pause(0.2);
+    pause(0.1);
 end
