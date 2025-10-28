@@ -39,7 +39,8 @@ obj2 = [30, 25]; % Fixed obstacle 2 position
 
 % --- Connectivity maintenance: parameters ---
 range = 100; % Maximum connectivity range
-eps = 0.1; % Connection strength. Disconnection: eps = 0
+eps_global = 0.1; % Global connection strength. Disconnection: eps_global = 0
+eps_local = 50; % Local connection strength. Disconnection: eps_local >> range (e.g. eps_local = 10*range)
 
 % --- Graph plots ---
 figure;
