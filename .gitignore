@@ -1,4 +1,6 @@
 .DS_Store
-slprj/
+*.asv
 *.slxc
+*.autosave
+slprj/
 old/

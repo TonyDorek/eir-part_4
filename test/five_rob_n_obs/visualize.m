@@ -7,7 +7,7 @@ title('Safe multi-agent system: collision avoidance + connectivity maintenance')
 xlabel('x'); ylabel('y');
 colors = ['r','b','g','m','c'];
 
-% --- Obstacles ---
+% --- Plotting obstacles ---
 obstacle_colors = ['r', 'b', 'k', 'y', 'm'];  % Colors for different obstacles
 for i = 1:n_obj
     plot(obstacles(1,i), obstacles(2,i), '-s', 'MarkerSize', 10, ...
@@ -16,55 +16,56 @@ for i = 1:n_obj
          'HorizontalAlignment', 'left', 'VerticalAlignment', 'top');
 end
 
-% --- Initial positions ---
+% --- Plotting initial positions ---
 for i = 1:n_robots
     plot(X0(1,i), X0(2,i), '-o', 'MarkerFaceColor', colors(i));
     text(X0(1,i), X0(2,i), strcat('x0', num2str(i)), ...
          'HorizontalAlignment', 'left', 'VerticalAlignment', 'top');
 end
 
-% --- Final positions ---
+% --- Plotting desired positions ---
 for i = 1:n_robots
     plot(Xd(1,i), Xd(2,i), '-x', 'MarkerSize', 8, 'LineWidth', 1.5, 'MarkerEdgeColor', colors(i));
     text(Xd(1,i), Xd(2,i), strcat('xd', num2str(i)), ...
          'HorizontalAlignment', 'left', 'VerticalAlignment', 'top');
 end
 
-% --- Trajectories (from Simulink simulations) ---
-X1 = squeeze(out.X1.Data);
-X2 = squeeze(out.X2.Data);
-X3 = squeeze(out.X3.Data);
-X4 = squeeze(out.X4.Data);
-X5 = squeeze(out.X5.Data);
+% --- Recovering and handling trajectories (from Simulink simulations) ---
+for i = 1:n_robots
+    eval(sprintf('X%d = squeeze(out.X%d.Data);', i, i))
+end
 
-% --- Handling trajectories ---
 h = gobjects(1, n_robots);
 for i = 1:n_robots
     h(i) = plot(NaN, NaN, colors(i), 'LineWidth', 2);
 end
 
 % --- System dynamics ---
-for i = 1:length(X1(1,:))
-    set(h(1), 'XData', X1(1,1:i), 'YData', X1(2,1:i));
-    set(h(2), 'XData', X2(1,1:i), 'YData', X2(2,1:i));
-    set(h(3), 'XData', X3(1,1:i), 'YData', X3(2,1:i));
-    set(h(4), 'XData', X4(1,1:i), 'YData', X4(2,1:i));
-    set(h(5), 'XData', X5(1,1:i), 'YData', X5(2,1:i));
+time_index = length(X1(1,:));
+
+for i = 1:time_index
+    for j = 1:n_robots
+        set(h(j), 'XData', eval(sprintf('X%d(1,1:i)',j)), 'YData', eval(sprintf('X%d(2,1:i)',j)));
+    end
     drawnow;
     pause(0.05);
 end
 
 subplot(1, 2, 2);
-grid on;
+% grid on;
 
 % --- Graph dynamics ---
-for i = 1:length(X1(1,:))
+v = zeros(2, n_robots);
+
+for i = 1:time_index
     if ~isvalid(fig) || ~ishandle(fig) % Check if figure is still open
         disp('Figure closed. Animation stopped.');
         break;
     end
-    [~,p] = create_graph([X1(:,i), X2(:,i), X3(:,i), X4(:,i), X5(:,i)], range, ...
-        'Evolution of robot positions (nodes) and connections (edges)');
+    for j = 1:n_robots
+        v(:,j) = eval(sprintf('X%d(:,i)', j));
+    end
+    [~,p] = create_graph(v, range, 'Evolution of robot positions (nodes) and connections (edges)');
     drawnow;
     pause(0.05);
 end
