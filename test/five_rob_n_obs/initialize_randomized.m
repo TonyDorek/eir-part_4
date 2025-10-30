@@ -18,9 +18,9 @@ end
 % --- Barrier Enforcement Block parameters ---
 cbf_states=n_robots*2;
 cbf_actions=n_robots*2;
-cbf_total_number=1+ ...             % 1 for Global Connectivity
-    n_obj*n_robots+ ...             % each obj for each robot
-    ((n_robots*(n_robots-1))/2);    % robot each other
+cbf_rob_obj = n_obj*n_robots;                   % each obj for each robot
+cbf_rob_rob = ((n_robots*(n_robots-1))/2);      % robot each other
+cbf_total_number = cbf_rob_obj + cbf_rob_rob + 1;  % 1 for Global Connectivity
 
 % --- Collision avoidance: parameters ---
 thr = 2;        % Minimum distance threshold. Collision: thr = 0
@@ -35,8 +35,10 @@ else
 end
 
 % --- Connectivity maintenance: parameters ---
-range = 100;    % Maximum connectivity range
-eps = 0.1;      % Connection strength. Disconnection: eps = 0
+range = 100; % Maximum connectivity range
+eps_global = 0.1; % Global connection strength. Ineffectiveness: eps_global = 0
+eps_local = 50; % Local connection strength. Ineffectiveness: eps_local >>> range (e.g. eps_local = 100*range)
+
 
 % --- Robot control: parameters ---
 
