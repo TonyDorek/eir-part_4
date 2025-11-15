@@ -11,13 +11,17 @@
 %
 % ---------------------------------------------------------------
 
-clear; close all; rng(2);
+clear; 
+clc;
+close all; 
+
+s = rng(0);
 
 %% --- Simulation parameters ------------------------------------
-N    = 8;              % number of robots
+N    = 7;              % number of robots
 dim  = 2;
 dt   = 0.05;
-Tsim = 10;
+Tsim = 15;
 steps = floor(Tsim/dt);
 
 % initial positions / velocities
@@ -27,22 +31,22 @@ x = [R0*cos(theta), R0*sin(theta)] + 0.3*randn(N,2);
 v = zeros(N,2);
 
 %% --- Nominal goal controller ----------------------------------
-x_goal = [2 0];
+x_goal = [0 -1];
 k_p = 1.0;
-k_d = 2*sqrt(k_p);
-u_nom_fun = @(xi,vi) -k_p*(xi - x_goal) - k_d*vi;
+k_d = 2.0;
+%u_nom_fun = @(xi,vi) -k_p*(xi - x_goal) - k_d*vi;
 
 %% --- Barrier-function / prediction params ---------------------
 Rmax = 6.0;         % maximum comm range (connectivity)
 R_comm = 6.5;       % neighborhood radius
-dmin = 0.6;         % minimum distance between robots (collision)
+dmin = 1.0;         % minimum distance between robots (collision)
 rsafe = 0.25;       % obstacle safety margin
 conn_margin = 0.8;  % margin for connectivity constraint
 
 Tpred = 0.4;        % prediction horizon
-cbf_gain_col  = 5.0;
+cbf_gain_col  = 1.0;
 cbf_gain_conn = 3.0;
-cbf_gain_obs  = 4.0;
+cbf_gain_obs  = 3.0;
 
 %% --- Obstacles ------------------------------------------------
 nObs = 4;
@@ -55,8 +59,8 @@ obs_rad = [0.6 0.3 0.3 0.4];
 %% --- QP setup --------------------------------------------------
 opts = optimoptions('quadprog','Display','off','Algorithm','interior-point-convex');
 
-norm2  = @(z) sqrt(sum(z.^2));
-vecIdx = @(i) (2*(i-1)+1 : 2*i);
+% norm2  = @(z) sqrt(sum(z.^2));
+% vecIdx = @(i) (2*(i-1)+1 : 2*i);
 
 % store last accelerations for neighbor prediction
 u_prev = zeros(N,2);
@@ -77,7 +81,8 @@ for k = 1:steps
         neigh = find(dists <= R_comm & (1:N)' ~= i);
 
         % nominal acceleration
-        u_nom_i = u_nom_fun(x(i,:), v(i,:));
+%         u_nom_i = u_nom_fun(x(i,:), v(i,:));
+        u_nom_i = u_nom_fun(k_p, k_d, x(i,:), v(i,:), x_goal);
 
         % build local constraints: A_i * u_i <= b_i
         A_i = []; b_i = [];
@@ -141,8 +146,10 @@ for k = 1:steps
     % optional velocity saturation
     vmax = 2.0;
     for i=1:N
-        s = norm(v(i,:));
-        if s > vmax, v(i,:) = (vmax/s)*v(i,:); end
+        thr = norm(v(i,:));
+        if thr > vmax
+            v(i,:) = (vmax/thr)*v(i,:);
+        end
     end
 
     % ----- log & visualize -------------------------------------
@@ -162,7 +169,7 @@ for k = 1:steps
     lambda2 = ev(min(2,length(ev)));
     lambda2_log(k)=lambda2;
 
-    if mod(k,3)==0
+    if mod(k,5)==0
         clf; hold on;
         % obstacles
         for o=1:nObs

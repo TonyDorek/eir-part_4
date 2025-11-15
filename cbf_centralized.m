@@ -2,6 +2,7 @@
 % ---------------------------------------------------------------
 % Double-integrator multi-robot system using velocity-aware CBFs.
 % Barriers use predicted relative positions: x + T*v
+%
 % Each step solves a QP:
 %     min ||u - u_nom||^2
 %     s.t. linear CBF inequalities (affine in u)
@@ -10,7 +11,11 @@
 %
 % ---------------------------------------------------------------
 
-clear; close all; rng(2);
+clear;
+clc;
+close all;
+
+s = rng(0);
 
 %% --- Simulation parameters ------------------------------------
 N    = 10;              % number of robots
@@ -20,7 +25,7 @@ Tsim = 10;
 steps = floor(Tsim/dt);
 
 % initial positions / velocities
-R0 = 3;
+R0 = 8;
 theta = linspace(0,2*pi*(1-1/N),N)';
 x = [R0*cos(theta), R0*sin(theta)] + 0.3*randn(N,2);
 v = zeros(N,2);
@@ -28,18 +33,18 @@ v = zeros(N,2);
 %% --- Nominal goal controller ----------------------------------
 x_goal = [4 0];
 k_p = 1.0;         % position gain
-k_d = 2*sqrt(k_p); % damping
+k_d = 2.0; % damping
 % nominal accel (PD to goal)
-u_nom_fun = @(xi,vi) -k_p*(xi - x_goal) - k_d*vi;
+% u_nom_fun = @(xi,vi) -k_p*(xi - x_goal) - k_d*vi;
 
 %% --- Barrier-function / prediction params ---------------------
 Rmax = 6.0;         % maximum comm range (connectivity)
-dmin = 0.6;         % minimum distance between robots (collision)
+dmin = 1.0;         % minimum distance between robots (collision)
 rsafe = 0.25;       % obstacle safety margin
 
 cbf_gain_conn = 1.0;   % alpha multiplier for connectivity (alpha * h)
-cbf_gain_col  = 6.0;   % collision
-cbf_gain_obs  = 6.0;   % obstacle
+cbf_gain_col  = 3.0;   % collision
+cbf_gain_obs  = 3.0;   % obstacle
 
 % Prediction horizon (seconds). Smaller = less conservative, larger = more predictive.
 Tpred = 0.5;
@@ -51,14 +56,14 @@ conn_margin = 0.5;
 nObs = 2;
 obs_pos = [ -1.5  0.5;
              1.0 0.0 ];
-obs_rad = [0.6 0.3];
+obs_rad = [0.6 1.2];
 
 %% --- QP setup --------------------------------------------------
 opts = optimoptions('quadprog','Display','off',...
                     'Algorithm','interior-point-convex','MaxIterations',200);
 
-vecIdx = @(i) (2*(i-1)+1 : 2*i);   % 2D indices for agent i
-norm2  = @(z) sqrt(sum(z.^2));
+%vecIdx = @(i) (2*(i-1)+1 : 2*i);   % 2D indices for agent i
+%norm2  = @(z) sqrt(sum(z.^2));
 
 %% --- Logging ---------------------------------------------------
 xlog = zeros(steps,N,2);
@@ -71,7 +76,8 @@ for k = 1:steps
     % Nominal accelerations
     u_nom = zeros(2*N,1);
     for i=1:N
-        u_nom(vecIdx(i)) = u_nom_fun(x(i,:),v(i,:))';
+%        u_nom(vecIdx(i)) = u_nom_fun(x(i,:),v(i,:))';
+        u_nom(vecIdx(i)) = u_nom_fun(k_p, k_d, x(i,:), v(i,:), x_goal)';
     end
 
     % Build linear constraints in the form Arows * u <= brows
@@ -148,9 +154,9 @@ for k = 1:steps
     end
 
     % --- Solve QP:  min ||u - u_nom||^2 subject to A*u <= b ----
-    H = 2*eye(2*N);
+    H = 2*eye(2*N); % because solver is 1/2*x^T*H*x + ...
     f = -2*u_nom;
-    if isempty(Arows)
+    if isempty(Arows) % if no CBF is triggered, follow the nominal commands
         u_sol = u_nom;
     else
         % numerical regularization for H to keep solver stable
@@ -170,9 +176,9 @@ for k = 1:steps
     % optional velocity saturation
     vmax = 2.0;
     for i=1:N
-        s = norm(v(i,:));
-        if s > vmax
-            v(i,:) = (vmax/s)*v(i,:);
+        thr = norm(v(i,:));
+        if thr > vmax
+            v(i,:) = (vmax/thr)*v(i,:);
         end
     end
 
@@ -193,7 +199,7 @@ for k = 1:steps
     lambda2 = ev(min(2,length(ev)));
     lambda2_log(k)=lambda2;
 
-    if mod(k,3)==0
+    if mod(k,5)==0  % Visualize every 5 steps
         clf; hold on;
         % obstacles
         for o=1:nObs
@@ -208,7 +214,9 @@ for k = 1:steps
                 end
             end
         end
+        % agents
         scatter(x(:,1),x(:,2),80,'b','filled');
+        % agent motion directions
         quiver(x(:,1),x(:,2),v(:,1),v(:,2),0.4,'Color',[0 0.6 0]);
         axis equal; grid on; xlim([-8 8]); ylim([-8 8]);
         title(sprintf('t = %.2f s  |  \\lambda_2 = %.3f',t,lambda2));
