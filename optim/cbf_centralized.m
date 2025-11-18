@@ -11,63 +11,10 @@
 %
 % ---------------------------------------------------------------
 
-clear;
-clc;
-close all;
+disp("Executing script with centralized control...")
 
-s = rng(0);
-
-%% --- Simulation parameters ------------------------------------
-N    = 10;              % number of robots
-dim  = 2;
-dt   = 0.05;
-Tsim = 10;
-steps = floor(Tsim/dt);
-
-% initial positions / velocities
-R0 = 8;
-theta = linspace(0,2*pi*(1-1/N),N)';
-x = [R0*cos(theta), R0*sin(theta)] + 0.3*randn(N,2);
-v = zeros(N,2);
-
-%% --- Nominal goal controller ----------------------------------
-x_goal = [4 0];
-k_p = 1.0;         % position gain
-k_d = 2.0; % damping
-% nominal accel (PD to goal)
-% u_nom_fun = @(xi,vi) -k_p*(xi - x_goal) - k_d*vi;
-
-%% --- Barrier-function / prediction params ---------------------
-Rmax = 6.0;         % maximum comm range (connectivity)
-dmin = 1.0;         % minimum distance between robots (collision)
-rsafe = 0.25;       % obstacle safety margin
-
-cbf_gain_conn = 1.0;   % alpha multiplier for connectivity (alpha * h)
-cbf_gain_col  = 3.0;   % collision
-cbf_gain_obs  = 3.0;   % obstacle
-
-% Prediction horizon (seconds). Smaller = less conservative, larger = more predictive.
-Tpred = 0.5;
-
-% Only enforce connectivity for pairs within this margin of Rmax
-conn_margin = 0.5;
-
-%% --- Obstacles ------------------------------------------------
-nObs = 2;
-obs_pos = [ -1.5  0.5;
-             1.0 0.0 ];
-obs_rad = [0.6 1.2];
-
-%% --- QP setup --------------------------------------------------
-opts = optimoptions('quadprog','Display','off',...
-                    'Algorithm','interior-point-convex','MaxIterations',200);
-
-%vecIdx = @(i) (2*(i-1)+1 : 2*i);   % 2D indices for agent i
-%norm2  = @(z) sqrt(sum(z.^2));
-
-%% --- Logging ---------------------------------------------------
-xlog = zeros(steps,N,2);
-lambda2_log = zeros(steps,1);
+%% --- Handling figures ---
+fig = figure;
 
 %% ==============================================================
 for k = 1:steps
@@ -76,7 +23,6 @@ for k = 1:steps
     % Nominal accelerations
     u_nom = zeros(2*N,1);
     for i=1:N
-%        u_nom(vecIdx(i)) = u_nom_fun(x(i,:),v(i,:))';
         u_nom(vecIdx(i)) = u_nom_fun(k_p, k_d, x(i,:), v(i,:), x_goal)';
     end
 
@@ -153,7 +99,7 @@ for k = 1:steps
         end
     end
 
-    % --- Solve QP:  min ||u - u_nom||^2 subject to A*u <= b ----
+    % --- Solve global QP:  min ||u - u_nom||^2 subject to A*u <= b ----
     H = 2*eye(2*N); % because solver is 1/2*x^T*H*x + ...
     f = -2*u_nom;
     if isempty(Arows) % if no CBF is triggered, follow the nominal commands
@@ -189,8 +135,10 @@ for k = 1:steps
     Aconn = zeros(N);
     for i=1:N-1
         for j=i+1:N
-            if norm2(x(i,:)-x(j,:)) <= Rmax
-                Aconn(i,j)=1;Aconn(j,i)=1;
+            dist = norm2(x(i,:)-x(j,:));
+            if dist <= Rmax
+                Aconn(i,j) = incmat_com(dist, Rmax);
+                Aconn(j,i) = Aconn(i,j);
             end
         end
     end
@@ -200,7 +148,14 @@ for k = 1:steps
     lambda2_log(k)=lambda2;
 
     if mod(k,5)==0  % Visualize every 5 steps
-        clf; hold on;
+        clf;
+        hold on;
+        if ~isvalid(fig) || ~ishandle(fig) % Check if figure is still open
+            disp('Figure closed. Simulation stopped.');
+            close;
+            return;
+        end
+
         % obstacles
         for o=1:nObs
             viscircles(obs_pos(o,:),obs_rad(o),'Color','r');
@@ -214,18 +169,12 @@ for k = 1:steps
                 end
             end
         end
-        % agents
-        scatter(x(:,1),x(:,2),80,'b','filled');
-        % agent motion directions
-        quiver(x(:,1),x(:,2),v(:,1),v(:,2),0.4,'Color',[0 0.6 0]);
+
+        scatter(x(:,1),x(:,2),80,'b','filled');  % plot agents
+        quiver(x(:,1),x(:,2),v(:,1),v(:,2),0.4,'Color',[0 0.6 0]);  % plot agent motion directions
         axis equal; grid on; xlim([-8 8]); ylim([-8 8]);
         title(sprintf('t = %.2f s  |  \\lambda_2 = %.3f',t,lambda2));
         drawnow;
     end
-end
-
-%% --- Plot λ₂ ---------------------------------------------------
-figure;
-plot((0:steps-1)*dt,lambda2_log,'LineWidth',1.4);
-xlabel('time [s]'); ylabel('\lambda_2 (connectivity)'); grid on;
-title('Connectivity evolution');
+end							  
+disp("Global Optimization problem - Resolved with success!")

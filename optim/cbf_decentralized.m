@@ -11,63 +11,10 @@
 %
 % ---------------------------------------------------------------
 
-clear; 
-clc;
-close all; 
+disp("Executing script with decentralized control...")
 
-s = rng(0);
-
-%% --- Simulation parameters ------------------------------------
-N    = 7;              % number of robots
-dim  = 2;
-dt   = 0.05;
-Tsim = 15;
-steps = floor(Tsim/dt);
-
-% initial positions / velocities
-R0 = 12;
-theta = linspace(0,2*pi*(1-1/N),N)';
-x = [R0*cos(theta), R0*sin(theta)] + 0.3*randn(N,2);
-v = zeros(N,2);
-
-%% --- Nominal goal controller ----------------------------------
-x_goal = [0 -1];
-k_p = 1.0;
-k_d = 2.0;
-%u_nom_fun = @(xi,vi) -k_p*(xi - x_goal) - k_d*vi;
-
-%% --- Barrier-function / prediction params ---------------------
-Rmax = 6.0;         % maximum comm range (connectivity)
-R_comm = 6.5;       % neighborhood radius
-dmin = 1.0;         % minimum distance between robots (collision)
-rsafe = 0.25;       % obstacle safety margin
-conn_margin = 0.8;  % margin for connectivity constraint
-
-Tpred = 0.4;        % prediction horizon
-cbf_gain_col  = 1.0;
-cbf_gain_conn = 3.0;
-cbf_gain_obs  = 3.0;
-
-%% --- Obstacles ------------------------------------------------
-nObs = 4;
-obs_pos = [ -1.5  0.5;
-             1.0 1.0;
-             0.0 2.0;
-             0.0 -3.0];
-obs_rad = [0.6 0.3 0.3 0.4];
-
-%% --- QP setup --------------------------------------------------
-opts = optimoptions('quadprog','Display','off','Algorithm','interior-point-convex');
-
-% norm2  = @(z) sqrt(sum(z.^2));
-% vecIdx = @(i) (2*(i-1)+1 : 2*i);
-
-% store last accelerations for neighbor prediction
-u_prev = zeros(N,2);
-
-%% --- Logging ---------------------------------------------------
-xlog = zeros(steps,N,2);
-lambda2_log = zeros(steps,1);
+%% --- Handling figures ---
+fig = figure;
 
 %% ==============================================================
 for k = 1:steps
@@ -81,7 +28,6 @@ for k = 1:steps
         neigh = find(dists <= R_comm & (1:N)' ~= i);
 
         % nominal acceleration
-%         u_nom_i = u_nom_fun(x(i,:), v(i,:));
         u_nom_i = u_nom_fun(k_p, k_d, x(i,:), v(i,:), x_goal);
 
         % build local constraints: A_i * u_i <= b_i
@@ -159,8 +105,10 @@ for k = 1:steps
     Aconn = zeros(N);
     for i=1:N-1
         for j=i+1:N
-            if norm2(x(i,:)-x(j,:)) <= Rmax
-                Aconn(i,j)=1;Aconn(j,i)=1;
+            dist = norm2(x(i,:)-x(j,:));
+            if dist <= Rmax
+                Aconn(i,j) = incmat_com(dist, Rmax);
+                Aconn(j,i) = Aconn(i,j);
             end
         end
     end
@@ -169,8 +117,15 @@ for k = 1:steps
     lambda2 = ev(min(2,length(ev)));
     lambda2_log(k)=lambda2;
 
-    if mod(k,5)==0
-        clf; hold on;
+    if mod(k,5)==0  % Visualize every 5 steps
+        clf;
+        hold on;
+        if ~isvalid(fig) || ~ishandle(fig) % Check if figure is still open
+            disp('Figure closed. Simulation stopped.');
+            close;
+            return;
+        end
+        
         % obstacles
         for o=1:nObs
             viscircles(obs_pos(o,:),obs_rad(o),'Color','r');
@@ -184,17 +139,13 @@ for k = 1:steps
                 end
             end
         end
-        scatter(x(:,1),x(:,2),80,'b','filled');
-        quiver(x(:,1),x(:,2),v(:,1),v(:,2),0.4,'Color',[0 0.6 0]);
+        scatter(x(:,1),x(:,2),80,'b','filled');  % plot agents								 
+        quiver(x(:,1),x(:,2),v(:,1),v(:,2),0.4,'Color',[0 0.6 0]);  % plot agent motion directions
         axis equal; grid on; xlim([-8 8]); ylim([-8 8]);
-        title(sprintf('Decentralized | t = %.2f s  |  \\lambda_2 = %.3f',t,lambda2));
+        title(sprintf('t = %.2f s  |  \\lambda_2 = %.3f',t,lambda2));
         drawnow;
     end
 end
 
-%% --- Plot λ₂ ---------------------------------------------------
-figure;
-plot((0:steps-1)*dt,lambda2_log,'LineWidth',1.4);
-xlabel('time [s]'); ylabel('\lambda_2 (connectivity)'); grid on;
-title('Connectivity evolution (decentralized)');
+disp("Local optimization problem(s) - Resolved with success!")
 
