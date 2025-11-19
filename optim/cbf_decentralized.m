@@ -106,8 +106,8 @@ for k = 1:steps
     for i=1:N-1
         for j=i+1:N
             dist = norm2(x(i,:)-x(j,:));
-            if dist <= Rmax
-                Aconn(i,j) = incmat_com(dist, Rmax);
+            if dist <= R_comm
+                Aconn(i,j) = incmat_com(dist, R_comm);
                 Aconn(j,i) = Aconn(i,j);
             end
         end
@@ -142,6 +142,7 @@ for k = 1:steps
         scatter(x(:,1),x(:,2),80,'b','filled');  % plot agents								 
         quiver(x(:,1),x(:,2),v(:,1),v(:,2),0.4,'Color',[0 0.6 0]);  % plot agent motion directions
         axis equal; grid on; xlim([-8 8]); ylim([-8 8]);
+        xlabel('x [m]'); ylabel('y [m]');
         title(sprintf('t = %.2f s  |  \\lambda_2 = %.3f',t,lambda2));
         drawnow;
     end
