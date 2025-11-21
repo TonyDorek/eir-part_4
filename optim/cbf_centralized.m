@@ -1,4 +1,4 @@
-% connectivity_CBF_doubleintegrator_predicted.m
+% cbf_centralized.m
 % ---------------------------------------------------------------
 % Double-integrator multi-robot system using velocity-aware CBFs.
 % Barriers use predicted relative positions: x + T*v
@@ -58,11 +58,11 @@ for k = 1:steps
             end
 
             %% --- Connectivity maintenance (predicted) --------------
-            % We would like predicted distance <= Rmax, i.e. h_conn = Rmax^2 - ||xT||^2 >= 0
+            % We would like predicted distance <= R_loc, i.e. h_conn = R_loc^2 - ||xT||^2 >= 0
             % depending on your behavior, you may enforce this only when near the boundary
-            if dij < (Rmax + conn_margin)
+            if dij < (R_loc + conn_margin)
                 xT_conn = xij + Tpred * vij;
-                h_conn = Rmax^2 - (xT_conn * xT_conn');
+                h_conn = R_loc^2 - (xT_conn * xT_conn');
                 % dh/dt = -2 xT_conn' * (vij + Tpred*(u_i - u_j))
                 % enforce: dh/dt + cbf_gain_conn * h_conn >= 0
                 % -> -2*Tpred*xT_conn'*(u_i - u_j) >= 2*xT_conn'*vij - cbf_gain_conn*h_conn
@@ -136,8 +136,8 @@ for k = 1:steps
     for i=1:N-1
         for j=i+1:N
             dist = norm2(x(i,:)-x(j,:));
-            if dist <= R_comm
-                Aconn(i,j) = incmat_com(dist, R_comm);
+            if dist <= R_glob
+                Aconn(i,j) = incmat_com(dist, R_glob);
                 Aconn(j,i) = Aconn(i,j);
             end
         end
@@ -172,9 +172,10 @@ for k = 1:steps
 
         scatter(x(:,1),x(:,2),80,'b','filled');  % plot agents
         quiver(x(:,1),x(:,2),v(:,1),v(:,2),0.4,'Color',[0 0.6 0]);  % plot agent motion directions
+        plot(x_goal(1), x_goal(2), '-x', 'MarkerEdgeColor', 'b', 'MarkerSize', 12, 'LineWidth', 1.5)   % plot goal
         axis equal; grid on; xlim([-8 8]); ylim([-8 8]);
         xlabel('x [m]'); ylabel('y [m]');
-        title(sprintf('t = %.2f s  |  \\lambda_2 = %.3f',t,lambda2));
+        title(sprintf('Centralized optimization | t = %.2f s | \\lambda_2 = %.3f',t,lambda2));
         drawnow;
     end
 end							  

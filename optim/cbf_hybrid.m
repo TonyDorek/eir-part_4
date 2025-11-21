@@ -1,4 +1,4 @@
-% connectivity_CBF_doubleintegrator_decentralized_lambda.m
+% cbf_hybrid.m
 % ---------------------------------------------------------------
 % Decentralized double-integrator multi-robot system using
 % predicted-distance (velocity-aware) CBFs, with:
@@ -15,7 +15,7 @@
 % λ2-estimator that would run on the robots).
 % ---------------------------------------------------------------
 
-disp("Executing script with hybrid control (decentralized + global connectivity soft constraint...)")
+disp("Executing script with hybrid control (decentralized CBFs + global connectivity soft constraint...)")
 
 %% --- Handling figures ---
 fig = figure;
@@ -31,8 +31,8 @@ for k = 1:steps
     for i=1:N-1
         for j=i+1:N
             dist = norm2(x(i,:)-x(j,:));
-            if dist <= R_comm
-                Aconn(i,j) = incmat_com(dist, R_comm);
+            if dist <= R_glob
+                Aconn(i,j) = incmat_com(dist, R_glob);
                 Aconn(j,i) = Aconn(i,j);
             end
         end
@@ -62,7 +62,7 @@ for k = 1:steps
     else
         gamma_glob = 1.0;
     end
-%     gamma_glob = 1.0;  % Uncomment to deactivate conn gain factor reinforcement
+    %gamma_glob = 1.0;  % Uncomment to deactivate conn gain factor reinforcement
     gamma_log(k) = gamma_glob;
 
     % effective connectivity CBF gain
@@ -86,7 +86,7 @@ for k = 1:steps
 
         % neighbors within comm radius (decentralized sensing)
         dists = sqrt(sum((x - x(i,:)).^2,2));
-        neigh = find(dists <= R_comm & (1:N)' ~= i);
+        neigh = find(dists <= R_glob & (1:N)' ~= i);
 
         % build local constraints: A_i * u_i <= b_i
         A_i = []; b_i = [];
@@ -107,9 +107,9 @@ for k = 1:steps
             b_i = [b_i; brow];
 
             % --- local connectivity maintenance (predicted) ------
-            if dij < (Rmax + conn_margin)
+            if dij < (R_loc + conn_margin)
                 xT_c = xij + Tpred * vij;
-                h_conn = Rmax^2 - (xT_c * xT_c');
+                h_conn = R_loc^2 - (xT_c * xT_c');
                 % (2*Tpred*xT_c)*u_i <= -2*xT_c*vij' + 2*Tpred*xT_c*u_j' + cbf_gain_conn_eff*h_conn
                 arow_c =  2*Tpred * xT_c;
                 brow_c = -2*(xT_c * vij') + 2*Tpred*(xT_c * u_j') + cbf_gain_conn_eff * h_conn;
@@ -184,14 +184,18 @@ for k = 1:steps
                 end
             end
         end
-        % robots
+        % agents
         scatter(x(:,1),x(:,2),80,'b','filled');
         % highlight special agent
         plot(x(special_idx,1), x(special_idx,2), 'ro', 'MarkerSize', 12, 'LineWidth',1.5);
         quiver(x(:,1),x(:,2),v(:,1),v(:,2),0.4,'Color',[0 0.6 0]);
+        %goals
+        plot(x_goal(1), x_goal(2), '-x', 'MarkerEdgeColor', 'b', 'MarkerSize', 12, 'LineWidth', 1.5)
+        plot(x_goal_alt(1), x_goal_alt(2), '-x', 'MarkerEdgeColor', 'r', 'MarkerSize', 12, 'LineWidth', 1.5)
+        
         axis equal; grid on; xlim([-8 8]); ylim([-8 8]);
         xlabel('x [m]'); ylabel('y [m]');
-        title(sprintf('t=%.2f s | λ2=%.3f | γ=%.2f', ...
+        title(sprintf('Hybrid optimization | t=%.2f s | λ2=%.3f | γ=%.2f', ...
                       t, lambda2, gamma_glob));
         drawnow;
     end
@@ -202,4 +206,4 @@ d_main = mean(dist_main);                  % average
 
 d_out = norm(x(special_idx,:) - x_goal_alt);  % --- Outlier accuracy ---
 
-disp("Hybrid optimization problem - Resolved with success!")
+disp("Hybrid optimization problem(s) - Resolved with success!")

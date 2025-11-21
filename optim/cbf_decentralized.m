@@ -1,4 +1,4 @@
-% connectivity_CBF_doubleintegrator_decentralized.m
+% cbf_decentralized.m
 % ---------------------------------------------------------------
 % Decentralized double-integrator multi-robot system
 % using predicted-distance (velocity-aware) Control Barrier Functions.
@@ -23,9 +23,9 @@ for k = 1:steps
 
     % ---- per-agent decentralized QP ----
     for i = 1:N
-        % neighbors within comm radius
+        % neighbors within threshold radius
         dists = sqrt(sum((x - x(i,:)).^2,2));
-        neigh = find(dists <= R_comm & (1:N)' ~= i);
+        neigh = find(dists <= R_glob & (1:N)' ~= i);
 
         % nominal acceleration
         u_nom_i = u_nom_fun(k_p, k_d, x(i,:), v(i,:), x_goal);
@@ -48,9 +48,9 @@ for k = 1:steps
             b_i = [b_i; brow];
 
             % --- connectivity maintenance (predicted) ---
-            if dij < (Rmax + conn_margin)
+            if dij < (R_loc + conn_margin)
                 xT_c = xij + Tpred * vij;
-                h_conn = Rmax^2 - (xT_c * xT_c');
+                h_conn = R_loc^2 - (xT_c * xT_c');
                 arow_c =  2*Tpred * xT_c;
                 brow_c = -2*(xT_c * vij') + 2*Tpred*(xT_c * u_j') + cbf_gain_conn * h_conn;
                 A_i = [A_i; arow_c];
@@ -106,8 +106,8 @@ for k = 1:steps
     for i=1:N-1
         for j=i+1:N
             dist = norm2(x(i,:)-x(j,:));
-            if dist <= R_comm
-                Aconn(i,j) = incmat_com(dist, R_comm);
+            if dist <= R_glob
+                Aconn(i,j) = incmat_com(dist, R_glob);
                 Aconn(j,i) = Aconn(i,j);
             end
         end
@@ -141,9 +141,10 @@ for k = 1:steps
         end
         scatter(x(:,1),x(:,2),80,'b','filled');  % plot agents								 
         quiver(x(:,1),x(:,2),v(:,1),v(:,2),0.4,'Color',[0 0.6 0]);  % plot agent motion directions
+        plot(x_goal(1), x_goal(2), '-x', 'MarkerEdgeColor', 'b', 'MarkerSize', 12, 'LineWidth', 1.5)   % plot goal
         axis equal; grid on; xlim([-8 8]); ylim([-8 8]);
         xlabel('x [m]'); ylabel('y [m]');
-        title(sprintf('t = %.2f s  |  \\lambda_2 = %.3f',t,lambda2));
+        title(sprintf('Decentralized optimization | t = %.2f s | \\lambda_2 = %.3f',t,lambda2));
         drawnow;
     end
 end

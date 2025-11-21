@@ -1,7 +1,7 @@
 %% VISUALIZATION SCRIPT
 % Run it AFTER executing the main script...
 
-%% --- Plot state evolution ---------------------------------------------------
+%% --- Plot state evolution ---
 figure;
 set(gcf, 'Position', [200, 100, 1200, 400]); % [x, y, width, height]
 
@@ -10,13 +10,12 @@ plot((0:k-1)*dt,xlog(1:k,:,1),'LineWidth',1.4);
 xlabel('time [s]'); ylabel('x [m]'); grid minor;% yticks(-R0:0.5:R0);
 title(sprintf('%d-agents system - Position x evolution', N));
 
-% figure;
 subplot(1, 2, 2);
 plot((0:k-1)*dt,xlog(1:k,:,2),'LineWidth',1.4);
 xlabel('time [s]'); ylabel('y [m]'); grid minor;% yticks(-R0:0.5:R0);
 title(sprintf('%d-agents system - Position y evolution', N));
 
-%% --- Plot connectivity parameters ---------------------------------------------------
+%% --- Plot connectivity parameters ---
 if opt_strategy == 'hybrid'
     figure;
     set(gcf, 'Position', [200, 600, 1200, 400])
@@ -30,7 +29,7 @@ if opt_strategy == 'hybrid'
     subplot(1,2,2);
     plot((0:k-1)*dt, gamma_log(1:k), 'LineWidth', 1.4);
     xlabel('time [s]'); ylabel('\gamma_{glob}'); grid on;
-    title('Gain factor \gamma_{glob} evolution');
+    title('\gamma_{glob} (gain factor) evolution');
 
     figure;
     set(gcf, 'Position', [500, 300, 600, 400])
