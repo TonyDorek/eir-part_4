@@ -20,7 +20,7 @@ Each agent in the system is modeled with a double-integrator dynamics, and the m
 
 - **Centralized** -> It computes joint accelerations for all agents using a single quadratic program (QP);
 - **Decentralized** -> It distributes computation across agents, each of which solves a local QP using only neighbor information;
-- **Hybrid** -> It augments the decentralized controller with a connectivity feedback term driven by the global connectivity metric &lambda;~2.
+- **Hybrid** -> It augments the decentralized controller with a connectivity feedback term driven by the global connectivity metric &lambda;<sub>2</sub>.
 
 Differently from the first two approaches, where the agents start with a circular distribution and converges towards the same goal, in the third one, after the formation has reached a predefined level of connectivity, one robot (the outlier) attempts to move away from the formation to reach a different goal. This test is used to see the benefits of the global connectivity gain reinforcement &gamma;~glob on the local controllers wrt standard decentralized approach.\
 Everything is released in MATLAB, with the development of custom scripts and functions ad hoc for the project
@@ -135,3 +135,4 @@ Mean distances from goals:\
 
 
 In the last two cases, it is evident that a triggered global gain factor enforces a stronger connectivity (higher &lambda;, more stable formation, outlier more distant from its goal) than the unitary case with pure decentralization (smaller &lambda;, more unstable formation, outlier closer to its goal).
+
