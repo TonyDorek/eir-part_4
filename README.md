@@ -20,9 +20,9 @@ Each agent in the system is modeled with a double-integrator dynamics, and the m
 
 - **Centralized** -> It computes joint accelerations for all agents using a single quadratic program (QP);
 - **Decentralized** -> It distributes computation across agents, each of which solves a local QP using only neighbor information;
-- **Hybrid** -> It augments the decentralized controller with a connectivity feedback term driven by the global connectivity metric &lambda;$_{2}$.
+- **Hybrid** -> It augments the decentralized controller with a connectivity feedback term driven by the global connectivity metric &lambda;~2.
 
-Differently from the first two approaches, where the agents start with a circular distribution and converges towards the same goal, in the third one, after the formation has reached a predefined level of connectivity, one robot (the outlier) attempts to move away from the formation to reach a different goal. This test is used to see the benefits of the global connectivity gain reinforcement &gamma;$_{glob}$ on the local controllers wrt standard decentralized approach.\
+Differently from the first two approaches, where the agents start with a circular distribution and converges towards the same goal, in the third one, after the formation has reached a predefined level of connectivity, one robot (the outlier) attempts to move away from the formation to reach a different goal. This test is used to see the benefits of the global connectivity gain reinforcement &gamma;~glob on the local controllers wrt standard decentralized approach.\
 Everything is released in MATLAB, with the development of custom scripts and functions ad hoc for the project
   
 
@@ -74,7 +74,7 @@ To set up the environment and run the program, follow the steps in order:
 5. To plot further results (state evolution, connectivity evolution etc.), open and finally run the *visualization.m* script;
 6. To experiment another optimization strategy, restart from point 3.
 
-<u>Note</u>: in the *cbf_hybrid.m* script, to switch to the classic decentralized approach it is possible to deactivate the effects of the global gain (&gamma;$_{glob}$) by uncommenting line 65. It is useful to compare it with the activated version (hybrid approach, commented line) and see the differences.
+<u>Note</u>: in the *cbf_hybrid.m* script, to switch to the classic decentralized approach it is possible to deactivate the effects of the global gain (&gamma;~glob) by uncommenting line 65. It is useful to compare it with the activated version (hybrid approach, commented line) and see the differences.
 
 ## (OPTIONAL) Simulink Model
 
@@ -133,4 +133,5 @@ Connectivity trends:\
 Mean distances from goals:\
 ![Hybrid - Group vs outlier distances](img/hyb_dist_2.png)
 
-In the last two cases, it is evident that a triggered global gain factor enforces a stronger connectivity (higher lambda, more stable formation, outlier more distant from its goal) than the unitary case with pure decentralization (smaller lambda, more unstable formation, outlier closer to its goal).
+
+In the last two cases, it is evident that a triggered global gain factor enforces a stronger connectivity (higher &lambda;, more stable formation, outlier more distant from its goal) than the unitary case with pure decentralization (smaller &lambda;, more unstable formation, outlier closer to its goal).
