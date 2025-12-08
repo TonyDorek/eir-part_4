@@ -38,23 +38,25 @@ end
 
 %% ANIMAZIONE
 for k = 1:M
-    clf; hold on; grid on; axis equal;
-    XK = squeeze(xlog(k,:,:)); % Nx2
-
-    axis([-8 8 -8 8]);
-    xlabel('x [m]'); ylabel('y [m]');
-    title(sprintf('Time = %.2f s', (k-1)*dt));
-
-    % --- ostacoli ---
-    for o = 1:length(obs_rad)
-        draw_circle(obs_pos(o,:), obs_rad(o), 'r');    % bordo ostacolo
+    if mod(k,5)==0
+        clf; hold on; grid on; axis equal;
+        XK = squeeze(xlog(k,:,:)); % Nx2
+    
+        axis([-8 8 -8 8]);
+        xlabel('x [m]'); ylabel('y [m]');
+        title(sprintf('Time = %.2f s', (k-1)*dt));
+    
+        % --- ostacoli ---
+        for o = 1:length(obs_rad)
+            draw_circle(obs_pos(o,:), obs_rad(o), 'r');    % bordo ostacolo
+        end
+    
+        % --- robot ---
+        scatter(XK(:,1), XK(:,2), 140, 'b', 'filled');
+    
+        drawnow;
+        pause(0.03);   % velocità dell'animazione
     end
-
-    % --- robot ---
-    scatter(XK(:,1), XK(:,2), 140, 'b', 'filled');
-
-    drawnow;
-    pause(0.03);   % velocità dell'animazione
 end
 
 %% Funzione per disegnare cerchi senza toolbox

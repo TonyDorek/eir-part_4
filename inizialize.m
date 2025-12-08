@@ -68,7 +68,13 @@ lambda_feedback_active = false;
 
 %% --- QP setup ---
 opts = optimoptions('quadprog','Display','off','Algorithm','interior-point-convex');
-opt_strategy = "centralized";   % per ora usiamo CENTRALIZED
+
+% Dict in order to parametrize the switch block in Simulink model
+keys = ["centralized", "decentralized", "hybrid"];
+values = [1, 2, 3];
+d = dictionary(keys, values);
+
+opt_strategy = "hybrid";
 
 %% --- Stato iniziale in forma vettoriale per Simulink ---
 x0_vec = reshape(x', [], 1);   % 2N x 1

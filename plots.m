@@ -125,6 +125,14 @@ if opt_str == "hybrid"
     subplot(1,2,2);
     % se gamma_log è più corto di M, taglia; se è più lungo, usa solo i primi M
     m_gamma = min(length(gamma_log), M);
+    for k = 1:m_gamma
+        if lambda2_log(k) < lambda2_warn
+            gamma_log(k) = 1 + k_lambda_glob * (lambda2_warn - lambda2_log(k));
+            gamma_log(k) = min(gamma_log(k), gamma_max);
+        else
+            gamma_log(k) = 1.0;
+        end
+    end
     plot(t(1:m_gamma), gamma_log(1:m_gamma), 'LineWidth', 1.4);
     xlabel('time [s]'); ylabel('\gamma_{glob}'); grid on;
     title('\gamma_{glob} (gain factor) evolution');
