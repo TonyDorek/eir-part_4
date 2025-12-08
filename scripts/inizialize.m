@@ -7,8 +7,7 @@ close all;
 s = rng(0);   % Seed
 
 %% --- Relative paths ---
-addpath(genpath('optim'))
-addpath(genpath('utils'))
+addpath(genpath('../functions'))
 
 %% --- Simulation parameters ---    
 N    = 5;        % <<< ORA 5 ROBOT
