@@ -39,7 +39,7 @@ function u_vec = centralized_cbf_step(x_vec, v_vec)
     u_nom = zeros(2*N, 1);
     for i = 1:N
         idx = vecIdx(i);  % es: [1 2], [3 4], ...
-        u_nom(idx) = u_nom_fun(k_p, k_d, x(i,:), v(i,:), x_goal).';
+        u_nom(idx) = u_nom_fun(k_p, k_d, x(i,:), v(i,:), x_goal(i,:))';
     end
 
     % ---------------------------------------------------------------------

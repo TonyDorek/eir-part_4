@@ -49,7 +49,7 @@ function u_vec = decentralized_cbf_step(x_vec, v_vec, u_prev_vec)
         neigh = find(dists <= R_glob & ( (1:N)' ~= i ));
 
         % nominal acceleration
-        u_nom_i = u_nom_fun(k_p, k_d, x(i,:), v(i,:), x_goal);  % 1x2
+        u_nom_i = u_nom_fun(k_p, k_d, x(i,:), v(i,:), x_goal(i,:));  % 1x2
 
         % vincoli locali: A_i u_i <= b_i  (u_i è 2x1)
         A_i = [];

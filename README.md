@@ -7,7 +7,7 @@ Project delivered to complete the 4th part of the Elective in Robotics (EiR) cou
 - [Repository Structure](#repository-structure)
 - [Requirements](#requirements)
 - [Installation](#installation)
-- [(OPTIONAL) Simulink Model](#optional-simulink-model)
+- [Simulink Model](#simulink-model)
 - [Examples](#examples)
 
 
@@ -20,10 +20,14 @@ Each agent in the system is modeled with a double-integrator dynamics, and the m
 
 - **Centralized** -> It computes joint accelerations for all agents using a single quadratic program (QP);
 - **Decentralized** -> It distributes computation across agents, each of which solves a local QP using only neighbor information;
-- **Hybrid** -> It augments the decentralized controller with a connectivity feedback term driven by the global connectivity metric &lambda;<sub>2</sub>.
+- **Hybrid** -> It augments the decentralized controller with a connectivity feedback term driven by the global connectivity metric &lambda;<sub>2</sub>;
+- **Distributed &lambda;** -> A different version of the decentralized controller, where the global connectivity is estimated by each agent through multi-hop communication and consensus mechanisms.
 
+Independently from the chosen approach, it is possible to set the initial agent positions, the goal position, the obstacle position or to randomize everything, including an outlier agent which will move and stay in disconnection from the swarm.
+<!---
 Differently from the first two approaches, where the agents start with a circular distribution and converges towards the same goal, in the third one, after the formation has reached a predefined level of connectivity, one robot (the outlier) attempts to move away from the formation to reach a different goal. This test is used to see the benefits of the global connectivity gain reinforcement &gamma;<sub>glob</sub> on the local controllers wrt standard decentralized approach.\
-Everything is released in MATLAB, with the development of custom scripts and functions ad hoc for the project
+Everything is released in MATLAB, with the development of custom scripts and functions ad hoc for the project.
+-->
   
 
 ## Repository Structure
@@ -31,21 +35,24 @@ The GitHhub repo is organized as the following:
 
 eir-part_4/\
 │\
-├── optim/\
-│ ├── cbf_centralized.m\
-│ ├── cbf_decentralized.m\
-│ └── cbf_hybrid.m\
+|├── helpers/\
+| ├──[...]\
+| ├── cbf_centralized.m\
+| ├── cbf_decentralized.m\
+| ├── cbf_hybrid.m\
+| └── [...]\
 │\
-├── utils/\
-│ ├── incmat_com.m\
-│ ├── norm2.m\
-│ ├── u_nom_fun.m\
-│ └── vecIdx.m\
+|├── logic/\
+| ├── distributed_lambda.m\
+| └── model.slx\
 │\
-├── initialization.m\
-├── main.m\
-├── visualization.m\
-└── README.md
+| ├── report/\
+| └── report.pdf\
+│\
+|├── initialization.m\
+|├── animation.m\
+|├── visualization.m\
+|└── README.md
 
 
 ## Requirements
@@ -54,9 +61,8 @@ Here the mandatory requirements to set the proper environment:
 ### MATLAB Version
 - MATLAB R2022b or higher
 
-### Toolboxes
-- Simulink (???)
-- Simulink Control Desing (???)
+### Plug-ins
+- Simulink
 - Optimization Toolbox
 - Image Processing Toolbox
 
@@ -70,13 +76,17 @@ To set up the environment and run the program, follow the steps in order:
    ```
 2. Open MATLAB and move to the cloned repository as current folder;
 3. Open the *initialization.m* script, select the desired optimization approach (variable 'opt_strategy', last line) and run it;
-4. Open the *main.m* program, actually a wrapper to the real controllers collected in the "optim" subfolder, and execute it to see a simulation of the multi-agent system dynamics;
-5. To plot further results (state evolution, connectivity evolution etc.), open and finally run the *visualization.m* script;
-6. To experiment another optimization strategy, restart from point 3.
+4.
+   1. If the approach is the Distributed one, open the *distributed_lambda.m* script under "logic" folder and execute it;
+   2. Otherwise, open the *model.slx* in Simulink and run the simulation;
+5. After the end of the previous point, open the *animation.m* to see a simulation of the multi-agent system dynamics;
+6. To plot further results (state evolution, connectivity evolution etc.), open and finally run the *visualization.m* script;
+7. To experiment another optimization strategy, restart from point 3.
 
+<!---
 <u>Note</u>: in the *cbf_hybrid.m* script, to switch to the classic decentralized approach it is possible to deactivate the effects of the global gain (&gamma;<sub>glob</sub>) by uncommenting line 65. It is useful to compare it with the activated version (hybrid approach, commented line) and see the differences.
-
-## (OPTIONAL) Simulink Model
+-->
+## Simulink Model
 
 - Block diagram purpose
 - Key parameters
@@ -135,5 +145,3 @@ Mean distances from goals:\
 
 
 In the last two cases, it is evident that a triggered global gain factor enforces a stronger connectivity (higher &lambda;, more stable formation, outlier more distant from its goal) than the unitary case with pure decentralization (smaller &lambda;, more unstable formation, outlier closer to its goal).
-
-

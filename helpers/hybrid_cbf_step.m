@@ -88,6 +88,7 @@ function u_vec = hybrid_cbf_step(x_vec, v_vec, u_prev_vec)
     else
         gamma_glob = 1.0;
     end
+    
     % gain effettivo sulla connettività
     cbf_gain_conn_eff = cbf_gain_conn * gamma_glob;
 
@@ -104,7 +105,7 @@ function u_vec = hybrid_cbf_step(x_vec, v_vec, u_prev_vec)
         if (i == special_idx) && lambda_fb_act
             goal_i = x_goal_alt;
         else
-            goal_i = x_goal;
+            goal_i = x_goal(i,:);
         end
 
         % nominale PD
