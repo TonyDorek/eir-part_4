@@ -100,7 +100,7 @@ if opt_strategy == "Distributed"
     % fprintf('  Weak spectral gaps: %d\n', sum(validation_flags(:) == 3));
     
     fprintf('\nλ2 TRAJECTORY:\n');
-    fprintf('  Mean: %.4f ± %.4f\n', mean(lambda2_log), mean(lambda2_std_log));
+    fprintf('  Mean over time: %.4f ± %.4f\n', mean(lambda2_log), mean(lambda2_std_log));
     fprintf('  Final: %.4f ± %.4f (conf=%.1f%%)\n', lambda2_avg, lambda2_std_avg, lambda2_conf_avg);
     
     fprintf('\nFEATURES ENABLED:\n');

@@ -15,7 +15,7 @@ CONFIG.randomize_obstacles = false;      % If true, obstacle positions and sizes
 CONFIG.randomize_outlier_goal = false;       % If true, one robot will have an outlier goal position
 
 %% --- Relative paths ---
-addpath(genpath('../helpers'))
+addpath(genpath('./helpers'))
 
 %% --- Simulation parameters ---    
 N    = 5;                   % Number of robots
@@ -199,4 +199,4 @@ keys = ["Centralized", "Decentralized", "Hybrid", "Distributed"];
 values = [1, 2, 3, 4];
 d = dictionary(keys, values);
 
-opt_strategy = "Decentralized"; % choose one of the opt methods in "keys" array
+opt_strategy = "Distributed"; % choose one of the opt methods in "keys" array
