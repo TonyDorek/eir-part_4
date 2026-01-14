@@ -2,7 +2,7 @@
 function print_estimation_debug(robot_i, t, n_direct, n_comm, n_blend, ...
         n_edges_filtered, n_edges_total, n_component, N, local_deg, ...
         Aconn_local, component_robots, lambda2_est, lambda2_std_val, ...
-        lambda2_conf, lambda2_cons, CONFIG, validation_flag)
+        lambda2_conf)%, lambda2_cons, CONFIG, validation_flag)
     % Compact debug output for estimation process
     
     fprintf('[R%d @ t=%.2fs] ', robot_i, t);
@@ -30,14 +30,14 @@ function print_estimation_debug(robot_i, t, n_direct, n_comm, n_blend, ...
     fprintf('Conf=%.1f%%', lambda2_conf);
     
     % Consensus
-    if CONFIG.consensus_enabled && abs(lambda2_cons - lambda2_est) > 1e-6
-        fprintf(' (cons=%.4f)', lambda2_cons);
-    end
+    % if CONFIG.consensus_enabled && abs(lambda2_cons - lambda2_est) > 1e-6
+    %     fprintf(' (cons=%.4f)', lambda2_cons);
+    % end
     
     % Warnings
-    if validation_flag > 0
-        fprintf(' | ⚠️');
-    end
+    % if validation_flag > 0
+    %     fprintf(' | ⚠️');
+    % end
     
     fprintf('\n');
 end

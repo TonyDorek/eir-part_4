@@ -9,10 +9,11 @@ s = rng(0);   % Seed
 
 %% --- Starting configuration ---
 CONFIG = struct();
-CONFIG.randomize_robots_initpos = false; % If true, robot initial positions are randomized
-CONFIG.randomize_goals = false;           % If true, robot goal positions are randomized
-CONFIG.randomize_obstacles = false;      % If true, obstacle positions and sizes are randomized
-CONFIG.randomize_outlier_goal = false;       % If true, one robot will have an outlier goal position
+CONFIG.randomize_robots_initpos = true;  % If true, robot initial positions are randomized
+CONFIG.randomize_goals = true;           % If true, robot goal positions are randomized
+CONFIG.randomize_obstacles = true;       % If true, obstacle positions and sizes are randomized
+CONFIG.outlier_random_goal = true;       % If true, one random robot will have a random goal position
+CONFIG.outlier_specific_goal = true;      % If true, one specific robot will have a specific goal position
 
 %% --- Relative paths ---
 addpath(genpath('./helpers'))
@@ -43,21 +44,21 @@ if CONFIG.randomize_goals               % IF Randomized goal positions
     x_goal = goal_region_center + goal_dispersion * (2*rand(N,2) - 1);  % N×2 matrix of individual goals
     % Add outlier if enabled
     outlier_idx = -1;  % Initialize
-    if CONFIG.randomize_outlier_goal
+    if CONFIG.outlier_random_goal
         outlier_idx = randi(N);  % Random robot gets outlier goal
         outlier_direction = randn(1,2);
         outlier_direction = outlier_direction / norm(outlier_direction);
         outlier_distance = 5.0;  % Additional distance for outlier goal
         x_goal(outlier_idx,:) = goal_region_center + (goal_dispersion + outlier_distance) * outlier_direction;
-        fprintf('Outlier goal assigned to Robot %d\n', outlier_idx);               % Debug info
+        fprintf('Random goal assigned to outlier Robot %d\n', outlier_idx);               % Debug info
     end
 else
     x_goal = ones(N,1)*[0 -1];  % Fixed goal for all robots
-    % if CONFIG.specific_outlier_goal
-    %     outlier_idx = 2; 
-    %     x_goal(outlier_idx,:) = [0 -6];
-    %     fprintf('Outlier goal assigned to Robot %d\n', outlier_idx);
-    % end
+    if CONFIG.outlier_specific_goal
+        outlier_idx = 2; 
+        x_goal(outlier_idx,:) = [0 -6];
+        fprintf('Specific goal assigned to outlier Robot %d\n', outlier_idx);
+    end
 end
 
 %% --- Controller parameters  ---
@@ -106,7 +107,7 @@ if CONFIG.randomize_obstacles
                 
                 % If invalid, regenerate this goal
                 if ~valid
-                    if i == outlier_idx && CONFIG.randomize_outlier_goal
+                    if i == outlier_idx && CONFIG.outlier_random_goal
                         % Regenerate outlier
                         outlier_direction = randn(1,2);
                         outlier_direction = outlier_direction / norm(outlier_direction);
@@ -133,31 +134,14 @@ else
     nObs = size(obs_pos,1);
 end
 
-%% --- Logging placeholder ---
-%xlog = zeros(steps,N,2);
-lambda2_log = zeros(steps,1);
-gamma_log = zeros(steps,1);
-
-%% --- Decentralized / hybrid params ---
-% (qui solo parametri logici)
-special_idx = 2;
-G = setdiff(1:N, special_idx);
-x_goal_alt = [0 -6];
-
+%% --- Decentralized / Distributed lambda params ---
 lambda2_eps   = 0;
 lambda2_warn  = 2.0;
 k_lambda_glob = 3.0;
 gamma_max     = 4.0;
-lambda_feedback_active = false;   % il valore iniziale del flag
-											   
-%% --- Distributed lambda params ---
-
-% --- Monte Carlo Uncertainty Quantification ---
-% CONFIG.mc_samples = 50;
-% CONFIG.mc_enabled = false;
 
 % --- Velocity Extrapolation ---
-CONFIG.extrapolation_enabled = true;
+CONFIG.extrapolation_enabled = true; % AD - If enabled, it calls a function to estimate new positions from old position and new velocity (uniform motion-style)
 CONFIG.extrapolation_max_age = 0.5;  % seconds
 
 % --- Normalized Decay Parameters (dimensionless) ---
@@ -167,13 +151,9 @@ CONFIG.comm_decay_rate = 0.1;        % Confidence decay per communication hop
 
 % --- Robust Consensus ---
 CONFIG.consensus_enabled = true;
-CONFIG.use_goal_blend = true;        % Use SP+Goal instead of SP+RS
+CONFIG.use_goal_blend = true;        % Use Starting Position (SP) + Goal Position (GP) instead of SP + RS (Random Search)
 CONFIG.outlier_threshold = 2.0;      % Reject estimates > 2σ from local mean
 CONFIG.min_consensus_neighbors = 2;
-
-% --- Validation Heuristics ---
-CONFIG.validation_enabled = true;
-CONFIG.validation_frequency = 5;     % Check every N steps
 
 % --- Confidence Thresholds ---
 CONFIG.edge_conf_threshold = 60;
@@ -190,13 +170,42 @@ CONFIG.position_timeout = 1.0;
 CONFIG.debug_frequency = 20;
 CONFIG.debug_estimation = true;      % Detailed per-robot estimation debug
 
+x_start = x;
+t_start = 0;
+
+% Enhanced message structure: position, velocity, timestamp
+% AD - position_knowledge -> A cell of N struct variables. The stable info
+% acquired by each robot
+
+position_knowledge = cell(1, N);
+
+for i = 1:N
+    position_knowledge{i} = struct('robot_id', {}, 'position', {}, 'velocity', {}, ...
+                                   'timestamp', {}, 'hop_count', {});
+    position_knowledge{i}(1) = struct('robot_id', i, 'position', x(i,:), ...
+                                      'velocity', v(i,:), 'timestamp', 0, 'hop_count', 0);
+end
+
+% λ2 estimates with uncertainty
+lambda2_estimates = zeros(N, 1);
+lambda2_confidence = zeros(N, 1);
+lambda2_std = zeros(N, 1);
+lambda2_consensus = zeros(N, 1);
+
+% Logs
+lambda2_log = zeros(steps, 1);
+lambda2_conf_log = zeros(steps, 1);
+lambda2_std_log = zeros(steps, 1);
+
+lambda2_log_robest = zeros(steps, N);
+lambda2_log_robcon = zeros(steps, N);
 
 %% --- QP setup ---
 opts = optimoptions('quadprog','Display','off','Algorithm','interior-point-convex');
 
 % Dict in order to parametrize the switch block in Simulink model
-keys = ["Centralized", "Decentralized", "Hybrid", "Distributed"];
-values = [1, 2, 3, 4];
+keys = ["Centralized", "Decentralized", "Distributed"];
+values = [1, 2, 3];
 d = dictionary(keys, values);
 
-opt_strategy = "Distributed"; % choose one of the opt methods in "keys" array
+opt_strategy = "Centralized"; % choose one of the opt methods in "keys" array

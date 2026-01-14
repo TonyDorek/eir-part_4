@@ -27,6 +27,9 @@ function [pos_est, vel_est, conf, std_dev] = ...
         
         noise_scale = 0.1 + 0.5 * normalized_dist;
         RS_pos = x_start(robot_j,:) + noise_scale * randn(1,2);
+        % AD - The more the robot is far from the start position (so high
+        % normalized_dist) the more is the noise on the attempt to
+        % estimate its position 
         
         pos_est = (SP_conf * SP_pos + RS_conf * RS_pos) / (SP_conf + RS_conf);
         conf = (SP_conf + RS_conf) / 2;

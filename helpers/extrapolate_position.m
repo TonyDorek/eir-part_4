@@ -18,7 +18,11 @@ function [pos_est, vel_est, conf, std_dev] = ...
         
         % Confidence decays with age and hops
         age_factor = exp(-2 * normalized_age);
+        % AD - The higher is the normalized_age, the less is the confidence
+        % about robot position estimate (too fast velocity or too old info)
         hop_factor = exp(-CONFIG.comm_decay_rate * comm_data.hop_count);
+        % AD - The higher is the hop count, the less is the confidence
+        % about robot position estimate (too many passages from one robot to another)      
         conf = 90 * age_factor * hop_factor;
         
         % Uncertainty grows with extrapolation time

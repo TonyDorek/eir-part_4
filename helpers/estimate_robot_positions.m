@@ -32,6 +32,8 @@ function [positions_est, velocities_est, confidences, stds] = ...
             has_valid_comm = false;
             
             % Try communication-based estimate
+            % AD - Robot j is not a direct neighbour now but robot i acquired
+            % some info about it in the past
             if ~isempty(comm_idx)
                 comm_data = position_knowledge{i}(comm_idx);
                 comm_age = t - comm_data.timestamp;
@@ -44,6 +46,8 @@ function [positions_est, velocities_est, confidences, stds] = ...
             end
             
             % Fallback to blended estimate
+            % AD - Robot j is neither a direct neighbour nor some old info
+            % about it are stored in robot i "database"
             if ~has_valid_comm
                 [positions_est(j,:), velocities_est(j,:), confidences(j), stds(j,:)] = ...
                     blend_estimate(j, x_start, x_goal, x, i, t, t_start, R_glob, CONFIG);
