@@ -49,10 +49,10 @@ eir-part_4/\
 |└── README.md
 
 In particular:
-- "initialization.m" script -> It saves the configurations, parameters and variables to be set before running the model
-- "visualization.m" script -> It plots the results of the model, from the animations to the output variables
-- "helpers" subfolder -> It collects all the functions used in the program
-- "simulation" subfolder -> It stores the Simulink model of the system
+- "initialization.m" script -> It sets the configurations, parameters and variables before running the model;
+- "visualization.m" script -> It plots the results of the model, from the animations to the output variables;
+- "helpers" subfolder -> It collects all the functions used in the program;
+- "simulation" subfolder -> It stores the Simulink model of the system.
 
 There are other accessory subfolders, like "img" and "report" (with the images in the .md file and the project report in PDF, respectively) that are not important in terms of software implementation.
 
