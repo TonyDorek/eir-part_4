@@ -1,23 +1,26 @@
 %% ANIMATION OF ROBOT DYNAMICS
+% Run it AFTER executing the Simulink model...
 
 fig = figure;
 
+% --- Re-shaping x and v tensors in output from Simulink ---
 xlog = reshape_log(xlog_sim);
 vlog = reshape_log(vlog_sim);
 
-%% --- Costruzione del vettore tempo ---
+% --- Building time vector ---
 l = size(xlog);
 M = l(1);
 t = (0:M-1)' * dt;   % [0, dt, 2dt, ..., (M-1)dt]
 
-if opt_strategy == "Distributed" % Re-shaping x and v tensors in output from Simulink
+% --- Re-shaping (or computing) lambda ---
+if opt_strategy == "Distributed"
     lambdaslog = reshape_log(lambdas);
 else
     lambda2_log = zeros(M,1);
     for k = 1:M
-        Xk = squeeze(xlog(k,:,:));   % N x 2, posizione di tutti gli agenti all'istante k
+        Xk = squeeze(xlog(k,:,:));   % N x 2, position of all the agents at time k
     
-        % matrice di adiacenza basata sulla distanza e R_glob
+        % Adjacency matrix based om distance and R_glob
         Aconn = zeros(N);
         for i = 1:N-1
             for j = i+1:N
@@ -29,7 +32,7 @@ else
             end
         end
     
-        % Laplaciano e autovalori
+        % Laplacian and eigenvalues
         L  = diag(sum(Aconn,2)) - Aconn;
         ev = sort(eig(L));
         if numel(ev) >= 2
@@ -40,18 +43,19 @@ else
     end 
 end
 
-% Calculating axis limits
+% --- Calculating axis limits ---
 all_x = [xlog(1,:,1)'; x_goal(:,1); obs_pos(:,1)];
 all_y = [xlog(1,:,2)'; x_goal(:,2); obs_pos(:,2)];
 margin = 1.0;
 axis_xlim = [min(all_x) - margin, max(all_x) + margin];
 axis_ylim = [min(all_y) - margin, max(all_y) + margin];
 
-% Finding unique rows and check for duplicates - Used for goal plotting
+% --- Finding unique rows and check for duplicates (used for goal plotting) ---
 [uniqueRows, ~] = unique(x_goal, 'rows');
 hasDuplicateRows = size(uniqueRows, 1) < size(x_goal, 1);
 
-fprintf("Simulation started!\n")
+% --- Start simulation ---
+fprintf("Simulation started!")
 
 for k = 1:M
     timestamp = (k-1)*dt;
@@ -74,14 +78,14 @@ for k = 1:M
         if opt_strategy ~= "Distributed"
             title(sprintf('Optimization => %s | Time = %.2f s', opt_strategy, (k-1)*dt));
         else
-            lambda_est = lambdaslog(:,:,1); % it's lambda2_estimates [200,5]
-            lambda_con = lambdaslog(:,:,2); % it's lambda2_consensus [200,5]
-            std = lambdaslog(:,:,3); % it's lambda2_std [200,5]
-            con = lambdaslog(:,:,4); % it's lambda2_confidence [200,5]            
+            lambda_est = lambdaslog(:,:,1); % it's lambda2_estimates, [200,5]
+            lambda_con = lambdaslog(:,:,2); % it's lambda2_consensus, [200,5]
+            std = lambdaslog(:,:,3); % it's lambda2_std, [200,5]
+            con = lambdaslog(:,:,4); % it's lambda2_confidence, [200,5]            
         
-            lambda2_log = mean(lambda_con,2); % it's lambda2_avg [200, 1]
-            lambda2_std_log = mean(std,2); % it's lambda2_std_avg [200,1]
-            lambda2_conf_log = mean(con,2); % it's lambda2_conf_avg [200,1]
+            lambda2_log = mean(lambda_con,2); % it's lambda2_avg, [200, 1]
+            lambda2_std_log = mean(std,2); % it's lambda2_std_avg, [200,1]
+            lambda2_conf_log = mean(con,2); % it's lambda2_conf_avg, [200,1]
 
             title(sprintf('Optimization => %s | Time = %.2f | λ2=%.3f±%.3f (conf=%.0f%%)', ...
             opt_strategy, timestamp, lambda2_log(k), lambda2_std_log(k), lambda2_conf_log(k)));
@@ -107,6 +111,7 @@ for k = 1:M
         % Drawing robots
         for i=1:N
             marker_color = colors(i,:);
+            scatter(x_start(i,1), x_start(i,2), 100, colors(i,:), 'o', 'LineWidth', 2);
             scatter(XK(i,1), XK(i,2), 100, colors(i,:), 'filled');
             quiver(XK(i,1), XK(i,2), VK(i,1), VK(i,2), 0.4, 'Color', colors(i,:), 'LineWidth', 1.5);
             if hasDuplicateRows
@@ -145,15 +150,13 @@ if opt_strategy == "Distributed"
     if CONFIG.consensus_enabled
         fprintf('  ✓ Robust consensus (outlier rejection)\n');
     end
-    fprintf('  ✓ Normalized decay parameters\n');
-    fprintf('  ✓ Phantom edge filtering\n');
 end    
 
 fprintf('\n✓ Simulation completed!!\n')
 
 %% PLOT VISUALIZATION
 
-% --- Plot evoluzione delle posizioni ---
+% --- Plotting the position evolution ---
 figure;
 set(gcf, 'Position', [200, 100, 1200, 400]); % [x, y, width, height]
 
@@ -169,7 +172,7 @@ xlabel('time [s]'); ylabel('y [m]'); grid minor;
 title(sprintf('%d-agents system - Position y evolution', N));
 legend('R1','R2','R3','R4','R5')
 
-% --- Plot evoluzione delle velocità ---
+% --- Plotting the velocity evolution ---
 figure;
 set(gcf, 'Position', [200, 600, 1200, 400]);
 
@@ -185,7 +188,7 @@ xlabel('time [s]'); ylabel('v_y [m/s]'); grid minor;
 title(sprintf('%d-agents system - Velocity v_y evolution', N));
 legend('R1','R2','R3','R4','R5')
 
-% --- Plot evoluzione della global connectivity ---
+% --- Plotting the global connectivity evolution ---
 figure;
 set(gcf, 'Position', [500, 600, 600, 400])
 plot(t, lambda2_log,'LineWidth',1.4);
