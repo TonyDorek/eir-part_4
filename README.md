@@ -44,9 +44,6 @@ eir-part_4/\
 |├── simulation/\
 | └── model.slx\
 │\
-| ├── report/\
-| └── report.pdf\
-│\
 |├── initialization.m\
 |├── visualization.m\
 |└── README.md
@@ -130,7 +127,7 @@ Connectivity trend:\
 ![Distributed - mean &lambda; eigenvalue evolution](img/dist_lambda_mean.png)
 ![Distributed - estimated &lambda; eigenvalue evolution](img/dist_lambda_single.png)
 
-The difference between estimation with or without consensus is that in the latter case each robot estimates &lambda; basing only on the knowledge acquired during motion, while in the first case this "personal" estimation is corrected with a weighted-&lambda; term coming from all the other agents. The mean value of these evolutions is then reported in the single plot above them.
+The difference between estimation with or without consensus is that, in the latter case, each robot estimates &lambda; basing only on the knowledge acquired during motion, while in the first case this "personal" estimation is corrected with a weighted-&lambda; term coming from all the other agents. The mean value of these evolutions is then reported in the single plot above them.
 
 <!---
 In the last two cases, it is evident that a triggered global gain factor enforces a stronger connectivity (higher &lambda;, more stable formation, outlier more distant from its goal) than the unitary case with pure decentralization (smaller &lambda;, more unstable formation, outlier closer to its goal).
