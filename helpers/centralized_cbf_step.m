@@ -1,11 +1,16 @@
 function u_vec = centralized_cbf_step(x_vec, v_vec)
 % CENTRALIZED_CBF_STEP
-%   Un singolo step del controllo CBF centralizzato.
-%   Da usare chiamandola da Simulink.
+% Single and centralized control step. Called in Simulink via MATLAB
+% function block
+%
+%   Input:
+%       x_vec      : 2N x 1 (positions [x1;y1;x2;y2;...])
+%       v_vec      : 2N x 1 (velocities)
+%
+%   Output:
+%       u_vec      : 2N x 1 (accelerations)
 
-    % ---------------------------------------------------------------------
-    % 1) Parametri dal workspace (set in initialize.m)
-    % ---------------------------------------------------------------------
+    % --- Workspace parameters (set in initialize.m) ---
     N             = evalin('base', 'N');
     R_glob        = evalin('base', 'R_glob');
     R_loc         = evalin('base', 'R_loc');
@@ -24,38 +29,32 @@ function u_vec = centralized_cbf_step(x_vec, v_vec)
     k_d           = evalin('base', 'k_d');
     opts          = evalin('base', 'opts');
 
-    % ---------------------------------------------------------------------
-    % 2) Ricostruisco x e v in matrici N x 2
-    % ---------------------------------------------------------------------
-    x_vec = x_vec(:);   % forzo colonna
+    % --- Reconstructing x and v in N x 2 matrices ---
+    x_vec = x_vec(:); 
     v_vec = v_vec(:);
 
     x = reshape(x_vec, 2, N).';  % N x 2
     v = reshape(v_vec, 2, N).';  % N x 2
 
-    % ---------------------------------------------------------------------
-    % 3) Accelerazioni nominali u_nom (PD verso x_goal)
-    % ---------------------------------------------------------------------
+    % --- Nominal accelerations u_nom (PD towards x_goal)
     u_nom = zeros(2*N, 1);
     for i = 1:N
         idx = vecIdx(i);  % es: [1 2], [3 4], ...
         u_nom(idx) = u_nom_fun(k_p, k_d, x(i,:), v(i,:), x_goal(i,:))';
     end
 
-    % ---------------------------------------------------------------------
-    % 4) Costruzione vincoli CBF: Arows * u <= brows
-    % ---------------------------------------------------------------------
+    % --- Building CBF constraints: Arows * u <= brows
     Arows = [];
     brows = [];
 
-    % ---- (a) Collisioni e connettività tra agenti -----------------------
+    % --- Collision and connectivity between agents ---
     for i = 1:N-1
         for j = i+1:N
             xij = x(i,:) - x(j,:);
             vij = v(i,:) - v(j,:);
             dij = norm2(xij);
 
-            % --- Collision avoidance (predicted) ---
+            % Collision avoidance (predicted)
             xT = xij + Tpred * vij;
             h_col = (xT * xT.') - dmin^2;
 
@@ -73,7 +72,7 @@ function u_vec = centralized_cbf_step(x_vec, v_vec)
             Arows = [Arows; arow_col];
             brows = [brows; brow_col];
 
-            % --- Connectivity (near R_loc) ---
+            % Connectivity (near R_loc)
             if dij < (R_loc + conn_margin)
                 xT_conn = xij + Tpred * vij;
                 h_conn  = R_loc^2 - (xT_conn * xT_conn.');
@@ -92,7 +91,7 @@ function u_vec = centralized_cbf_step(x_vec, v_vec)
         end
     end
 
-    % ---- (b) Collisioni agente–ostacolo --------------------------------
+    % --- Agent-obstacle collisions ---
     for i = 1:N
         idx_i = vecIdx(i);
         for o = 1:nObs
@@ -113,9 +112,7 @@ function u_vec = centralized_cbf_step(x_vec, v_vec)
         end
     end
 
-    % ---------------------------------------------------------------------
-    % 5) QP: min ||u - u_nom||^2  s.t. Arows*u <= brows
-    % ---------------------------------------------------------------------
+    % --- QP: min ||u - u_nom||^2  s.t. Arows*u <= brows ---
     H = 2*eye(2*N);
     f = -2*u_nom;
 
@@ -130,8 +127,6 @@ function u_vec = centralized_cbf_step(x_vec, v_vec)
         end
     end
 
-    % ---------------------------------------------------------------------
-    % 6) Output
-    % ---------------------------------------------------------------------
+    % --- Output ---
     u_vec = u_sol;
 end

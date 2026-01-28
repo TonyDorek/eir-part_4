@@ -1,17 +1,17 @@
 function u_vec = decentralized_cbf_step(x_vec, v_vec, u_prev_vec)
 % DECENTRALIZED_CBF_STEP
-%   Un singolo step di controllo decentralizzato.
-%   Da usare chiamandola da Simulink.
+% Single and decentralized control step. Called in Simulink via MATLAB
+% function block 
 %
 %   Input:
-%       x_vec      : 2N x 1 (posizioni [x1;y1;x2;y2;...])
-%       v_vec      : 2N x 1 (velocità)
-%       u_prev_vec : 2N x 1 (accelerazioni del passo precedente)
+%       x_vec      : 2N x 1 (positions [x1;y1;x2;y2;...])
+%       v_vec      : 2N x 1 (velocities)
+%       u_prev_vec : 2N x 1 (accelerations from previous step)
 %
 %   Output:
-%       u_vec      : 2N x 1 (accelerazioni attuali)
+%       u_vec      : 2N x 1 (current accelerations)
 
-    % --- Parametri dal workspace (initialize.m) ---
+    % --- Workspace parameters (set in initialize.m) ---
     N             = evalin('base','N');
     R_glob        = evalin('base','R_glob');
     R_loc         = evalin('base','R_loc');
@@ -30,7 +30,7 @@ function u_vec = decentralized_cbf_step(x_vec, v_vec, u_prev_vec)
     k_d           = evalin('base','k_d');
     opts          = evalin('base','opts');
 
-    % --- Rimappo in matrici N x 2 ---
+    % --- Reconstructing x and v in N x 2 matrices ---
     x_vec      = x_vec(:);
     v_vec      = v_vec(:);
     u_prev_vec = u_prev_vec(:);
@@ -39,30 +39,30 @@ function u_vec = decentralized_cbf_step(x_vec, v_vec, u_prev_vec)
     v      = reshape(v_vec,      2, N).';
     u_prev = reshape(u_prev_vec, 2, N).';   % N x 2
 
-    % --- Matrice comandi da calcolare ---
+    % --- Matrix of commands to compute ---
     U = zeros(N,2);
 
-    % --- QP locale per ogni agente i ---
+    % --- Local QP locale for each agent i ---
     for i = 1:N
-        % vicini entro R_glob (escludo i)
+        % Check neighbours within R_glob (excluded i)
         dists = sqrt(sum((x - x(i,:)).^2,2));
         neigh = find(dists <= R_glob & ( (1:N)' ~= i ));
 
-        % nominal acceleration
+        % Nominal acceleration
         u_nom_i = u_nom_fun(k_p, k_d, x(i,:), v(i,:), x_goal(i,:));  % 1x2
 
-        % vincoli locali: A_i u_i <= b_i  (u_i è 2x1)
+        % Local constraints: A_i u_i <= b_i  (u_i is 2 x 1)
         A_i = [];
         b_i = [];
 
-        % --- vincoli agent-agent ---
+        % --- Agent-agent constraints ---
         for j = neigh'
             xij = x(i,:) - x(j,:);
             vij = v(i,:) - v(j,:);
-            u_j = u_prev(j,:);        % accel del vicino al passo precedente
+            u_j = u_prev(j,:);        % accel from previous step
             dij = norm2(xij);
 
-            % collision avoidance (predicted)
+            % Collision avoidance (predicted)
             xT   = xij + Tpred * vij;
             h_col = (xT * xT.') - dmin^2;
 
@@ -74,7 +74,7 @@ function u_vec = decentralized_cbf_step(x_vec, v_vec, u_prev_vec)
             A_i = [A_i; arow];
             b_i = [b_i; brow];
 
-            % connectivity (solo vicino al bordo R_loc)
+            % Connectivity (only near border R_loc)
             if dij < (R_loc + conn_margin)
                 xT_c  = xij + Tpred * vij;
                 h_conn = R_loc^2 - (xT_c * xT_c.');
@@ -89,7 +89,7 @@ function u_vec = decentralized_cbf_step(x_vec, v_vec, u_prev_vec)
             end
         end
 
-        % --- obstacle avoidance ---
+        % --- Obstacle avoidance ---
         for o = 1:nObs
             xio  = x(i,:) - obs_pos(o,:);
             vio  = v(i,:);
@@ -103,7 +103,7 @@ function u_vec = decentralized_cbf_step(x_vec, v_vec, u_prev_vec)
             b_i = [b_i; brow_o];
         end
 
-        % --- solve local 2D QP: min ||u_i - u_nom_i||^2 ---
+        % --- Solve local 2D QP: min ||u_i - u_nom_i||^2 ---
         H = 2*eye(2);
         f = -2*u_nom_i';
 
@@ -119,6 +119,6 @@ function u_vec = decentralized_cbf_step(x_vec, v_vec, u_prev_vec)
         U(i,:) = u_i';
     end
 
-    % --- Output vettoriale 2N x 1 ---
+    % --- Output ---
     u_vec = reshape(U.', [], 1);
 end

@@ -1,6 +1,6 @@
 % --- Find Connected Component ---
 function component_robots = find_connected_component(Aconn, N, robot_id)
-    % BFS to find connected component containing robot_id
+    % Breadth-First Search to find connected component containing robot_id
     
     visited = false(N, 1);
     queue = robot_id;

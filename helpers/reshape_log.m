@@ -5,10 +5,10 @@ function new_log = reshape_log(old_log)
     nd = ndims(old_log);
         
     if nd == 3
-        % Caso come il tuo delle vettore delle lambda: [4N x 1 x M]
-        % es: 10 x 1 x 401  per N=5, M=401
+        % Lambda tensor case: [4N x 1 x M]
+        % e.g.: 10 x 1 x 401  per N=5, M=401
         dim1 = dims(1);   % = 4N
-        M    = dims(3);   % = M, numero di istanti
+        M    = dims(3);   % n° steps
         N    = dim1 / 4;
     
         new_log = zeros(M, N, 4);
@@ -20,8 +20,7 @@ function new_log = reshape_log(old_log)
         end
     
     elseif nd == 2
-        % Caso "classico" dei log di x e v: [M x 2N]
-        % ogni riga è un istante, ogni coppia di colonne (xi_x, xi_y)
+        % Classic x and v state vector dims: [M x 2N]
         M    = dims(1);
         dim2 = dims(2);   % = 2N
         N    = dim2 / 2;

@@ -1,7 +1,7 @@
 % --- Blend Starting Position with Goal/Random ---
 function [pos_est, vel_est, conf, std_dev] = ...
         blend_estimate(robot_j, x_start, x_goal, x, robot_i, t, t_start, R_glob, CONFIG)
-    % Blend starting position with goal (or random search) when no comm available
+    % Blend starting position with goal (or random search) when communication is not available
     
     SP_pos = x_start(robot_j, :);
     
@@ -25,12 +25,12 @@ function [pos_est, vel_est, conf, std_dev] = ...
         normalized_dist = max(0, (est_dist - R_glob) / (CONFIG.rs_decay_distance * R_glob));
         RS_conf = CONFIG.rs_conf_max * exp(-normalized_dist) + CONFIG.rs_conf_min;
         
+        % The more the robot is far from the start position (so high
+        % normalized_dist) the more is the noise on the attempt to
+        % estimate its position        
         noise_scale = 0.1 + 0.5 * normalized_dist;
         RS_pos = x_start(robot_j,:) + noise_scale * randn(1,2);
-        % AD - The more the robot is far from the start position (so high
-        % normalized_dist) the more is the noise on the attempt to
-        % estimate its position 
-        
+ 
         pos_est = (SP_conf * SP_pos + RS_conf * RS_pos) / (SP_conf + RS_conf);
         conf = (SP_conf + RS_conf) / 2;
         std_scalar = noise_scale;

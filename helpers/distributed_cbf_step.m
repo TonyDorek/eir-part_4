@@ -1,10 +1,19 @@
 function [u_vec, lambdas] = distributed_cbf_step(x_vec,v_vec, u_prev_vec, t)
-%DISTRIBUTED_CBF_STEP Summary of this function goes here
-%   Detailed explanation goes here
+% DISTRIBUTED_CBF_STEP
+% Single and distributed control step. Called in Simulink via MATLAB
+% function block 
+%
+%   Input:
+%       x_vec      : 2N x 1 (positions [x1;y1;x2;y2;...])
+%       v_vec      : 2N x 1 (velocities)
+%       u_prev_vec : 2N x 1 (accelerations from previous step)
+%       t          : 1 x 1  (timestep)
+%
+%   Output:
+%       u_vec      : 2N x 1 (current accelerations)
+%       lambdas    : 4N x 1 (connectivity results)
 
-    % ---------------------------------------------------------------------
-    % 1) Parametri dal workspace (set in initialize.m)
-    % ---------------------------------------------------------------------
+    % --- Workspace parameters (set in initialize.m) ---
     N             = evalin('base', 'N');
     R_glob        = evalin('base', 'R_glob');
     CONFIG        = evalin('base', 'CONFIG');
@@ -37,10 +46,8 @@ function [u_vec, lambdas] = distributed_cbf_step(x_vec,v_vec, u_prev_vec, t)
     opts          = evalin('base', 'opts');
     opt_strategy  = evalin('base', 'opt_strategy');
 
-    % ---------------------------------------------------------------------
-    % 2) Ricostruisco x e v in matrici N x 2
-    % ---------------------------------------------------------------------
-    x_vec = x_vec(:);   % forzo colonna
+    % --- Reconstructing x and v in N x 2 matrices ---
+    x_vec = x_vec(:); 
     v_vec = v_vec(:);
     u_prev_vec = u_prev_vec(:);
     
@@ -48,37 +55,37 @@ function [u_vec, lambdas] = distributed_cbf_step(x_vec,v_vec, u_prev_vec, t)
     v = reshape(v_vec, 2, N).';  % N x 2
     u_prev = reshape(u_prev_vec, 2, N).';   % N x 2
 
-% Update own position & velocity in knowledge base
-    new_messages = cell(N, 1); % AD - new_messages -> A cell of N struct variables. The dynamic info that should be communicated robot-to-robot
+    % --- Update own position & velocity in knowledge base ---
+    new_messages = cell(N, 1); % new_messages -> A cell of N struct variables. The dynamic info that should be communicated robot-to-robot
     for i = 1:N
-        own_idx = find([position_knowledge{i}.robot_id] == i, 1); % AD - It's always 1 by construction...
+        own_idx = find([position_knowledge{i}.robot_id] == i, 1); % It's always 1 by construction...
         position_knowledge{i}(own_idx).position = x(i,:);
         position_knowledge{i}(own_idx).velocity = v(i,:);
         position_knowledge{i}(own_idx).timestamp = t;
         new_messages{i} = position_knowledge{i};
     end
     
-    % Multi-hop message forwarding
+    % --- Multi-hop message forwarding ---
     for i = 1:N
         dists = sqrt(sum((x - x(i,:)).^2, 2));
-        neigh = find(dists <= R_glob & (1:N)' ~= i); % AD - Array with all the indices of the robots neighbours of robot i
+        neigh = find(dists <= R_glob & (1:N)' ~= i); % Array with all the indices of the robots neighbours of robot i
         
         for j = neigh'
-            incoming_messages = new_messages{j}; % AD - incoming_messages -> A single struct variable (database known by robot j)
+            incoming_messages = new_messages{j}; % incoming_messages -> A single struct variable (database known by robot j)
             
             for msg_idx = 1:length(incoming_messages)
                 msg_data = incoming_messages(msg_idx); % msg_data -> single line to be potentially passed by robot j to robot i about robot k (coming from the loop)
                 robot_id = msg_data.robot_id;
                 
-                existing_idx = find([position_knowledge{i}.robot_id] == robot_id, 1); % AD - Scalar with the line index in which robot k appears inside the robot i struct database (if it is known)
+                existing_idx = find([position_knowledge{i}.robot_id] == robot_id, 1); % Scalar with the line index in which robot k appears inside the robot i struct database (if it is known)
                 should_update = false; 
                 new_hop_count = msg_data.hop_count + 1;
                 
-                if isempty(existing_idx) % AD - If robot i doesn't know info about robot k passed by robot j, update
+                if isempty(existing_idx) % If robot i doesn't know info about robot k passed by robot j, update
                     if new_hop_count <= CONFIG.max_hops
                         should_update = true;
                     end
-                else % AD - If robot i already knows info about robot k passed by robot j, but on a older timestep, update
+                else % If robot i already knows info about robot k passed by robot j, but on a older timestep, update
                     existing = position_knowledge{i}(existing_idx);
                     if (msg_data.timestamp > existing.timestamp) && (new_hop_count <= CONFIG.max_hops)
                         should_update = true;
@@ -107,30 +114,27 @@ function [u_vec, lambdas] = distributed_cbf_step(x_vec,v_vec, u_prev_vec, t)
     end
     
     
-    %% ====================================================================
-    %%  4.2 λ2 ESTIMATION & UNCERTAINTY QUANTIFICATION
-    %% ====================================================================
-    
+    % --- λ2 estimation & uncertainty quantification ---
     for i = 1:N
         % Identify direct neighbors and known robots
         dists_to_i = sqrt(sum((x - x(i,:)).^2, 2));
         direct_neigh = find(dists_to_i <= R_glob & (1:N)' ~= i);
         known_robots = [position_knowledge{i}.robot_id];
         
-        % --- Estimate all robot positions ---
+        % Estimate all robot positions
         [positions_estimated, velocities_estimated, position_confidences, position_std] = ...
             estimate_robot_positions(N, i, x, v, direct_neigh, position_knowledge, ...
                                     t, x_start, t_start, x_goal, R_glob, CONFIG);
         
-        % --- Build adjacency matrix with phantom edge filtering ---
-        % AD - n_edges is the total amount of edges for the graph known by robot i 
+        % Build adjacency matrix with phantom edge filtering
+        % n_edges is the total amount of edges for the graph known by robot i 
         [Aconn_local, n_edges_total, n_edges_filtered] = build_adjacency_matrix(...
             N, positions_estimated, position_confidences, known_robots, ...
             direct_neigh, i, R_glob, CONFIG.edge_conf_threshold);
     
         
-        % --- Find connected component ---
-        % AD - It determines all the robot indices connected at graph level
+        % Find connected component
+        % It determines all the robot indices connected at graph level
         % (so directly or indirectly) to robot i
         component_robots = find_connected_component(Aconn_local, N, i);
         n_component = length(component_robots);
@@ -189,9 +193,7 @@ function [u_vec, lambdas] = distributed_cbf_step(x_vec,v_vec, u_prev_vec, t)
         end
     end
     
-    %% ====================================================================
-    %%  4.4 CONTROL (UNCERTAINTY-AWARE CBF-QP)
-    %% ====================================================================
+    % --- Control section (uncertainty-aware CBF-QP) ---
     
     U = zeros(N,2);
     
@@ -286,11 +288,11 @@ function [u_vec, lambdas] = distributed_cbf_step(x_vec,v_vec, u_prev_vec, t)
         
         U(i,:) = u_i';
     end
-        
-    % --- Output vettoriale 2N x 1 ---
-    u_vec = reshape(U.', [], 1);
-
-    lambdas = [];
+    
+    % --- Outputs ---
+    u_vec = reshape(U.', [], 1);  % Acceleration outputs 2N x 1
+    
+    lambdas = [];  % λ outputs 4N x 1
     for i = 1:N
         aux = [lambda2_estimates(i); lambda2_consensus(i); lambda2_std(i); lambda2_confidence(i)];
         lambdas = [lambdas; aux];
