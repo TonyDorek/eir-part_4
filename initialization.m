@@ -10,9 +10,9 @@ s = rng(0);             % Seed for the random number generation
 
 %% --- Starting configuration ---
 CONFIG = struct();
-CONFIG.randomize_robots_initpos = false;  % If true, robot initial positions are randomized
-CONFIG.randomize_goals = false;           % If true, robot goal positions are randomized
-CONFIG.randomize_obstacles = false;       % If true, obstacle positions and sizes are randomized
+CONFIG.randomize_robots_initpos = true;  % If true, robot initial positions are randomized
+CONFIG.randomize_goals = true;           % If true, robot goal positions are randomized
+CONFIG.randomize_obstacles = true;       % If true, obstacle positions and sizes are randomized
 CONFIG.outlier_random_goal = false;       % If true, one random robot will have a random goal position
 CONFIG.outlier_specific_goal = false;     % If true, one specific robot will have a specific goal position
 

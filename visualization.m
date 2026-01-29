@@ -111,6 +111,7 @@ for k = 1:M
         % Drawing robots
         for i=1:N
             marker_color = colors(i,:);
+            plot(squeeze(xlog(1:k,i,1)), squeeze(xlog(1:k,i,2)), 'Color', colors(i,:), 'LineWidth', 1, 'LineStyle', '--');
             scatter(x_start(i,1), x_start(i,2), 100, colors(i,:), 'o', 'LineWidth', 2);
             scatter(XK(i,1), XK(i,2), 100, colors(i,:), 'filled');
             quiver(XK(i,1), XK(i,2), VK(i,1), VK(i,2), 0.4, 'Color', colors(i,:), 'LineWidth', 1.5);
