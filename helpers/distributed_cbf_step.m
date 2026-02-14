@@ -208,8 +208,8 @@ function [u_vec, lambdas] = distributed_cbf_step(x_vec,v_vec, u_prev_vec, t)
         % Modulate CBF gain based on conservative λ2
         if lambda2_conservative > lambda2_eps && lambda2_conf_i > CONFIG.edge_conf_threshold
             if lambda2_conservative < lambda2_warn
-                gamma_glob = 1 + k_lambda_glob * (lambda2_warn - lambda2_conservative);
-                cbf_gain_conn_eff = cbf_gain_conn * gamma_glob;
+                gamma_i = 1 + k_lambda_glob * (lambda2_warn - lambda2_conservative);
+                cbf_gain_conn_eff = cbf_gain_conn * gamma_i;
                 cbf_gain_conn_eff = min(cbf_gain_conn_eff, cbf_gain_conn * gamma_max);
             else
                 cbf_gain_conn_eff = cbf_gain_conn;

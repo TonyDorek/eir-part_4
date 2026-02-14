@@ -5,7 +5,7 @@ clear;
 clc;
 close all;
 
-s = rng(0);             % Seed for the random number generation
+s = rng(12);             % Seed for the random number generation
 %s = rng('shuffle');
 
 %% --- Starting configuration ---
@@ -47,8 +47,8 @@ k_p = 1.0;                     % Position gain
 k_d = 2.0;                     % Velocity gain
 
 %% --- Control Barrier Function parameters ---
-R_glob = 5.0;           % Global communication radius (for neighborhood determination)
-R_loc = 4.0;            % Maximum local communication radius (for connectivity constraint)
+R_glob = 5;           % Global communication radius (for neighborhood determination)
+R_loc = R_glob*0.8;     % Maximum local communication radius (for connectivity constraint)
 conn_margin = 1.0;      % Margin for connectivity constraint. Enforce it only for pairs within this margin over R_loc                               
 dmin = 1.0;             % Minimum distance between robots (for agent collision constraint)
 rsafe = 0.25;           % Obstacle safety margin (for obstacle collision constraint, together with the obstacle radius)                                 
@@ -60,7 +60,7 @@ Tpred = 0.5;            % Prediction horizon (seconds). Smaller = more conservat
 %% -- Goal Setting -- 
 if CONFIG.randomize_goals
     goal_region_center = [0 -1];
-    goal_dispersion = 4.0;              % Controls spread of goals (higher = more dispersed)
+    goal_dispersion = 6.0;              % Controls spread of goals (higher = more dispersed)
     x_goal = goal_region_center + goal_dispersion * (2*rand(N,2) - 1);      % N×2 matrix of individual goals
     outlier_idx = -1;                   % Initialize outlier index
     if CONFIG.outlier_random_goal
@@ -82,7 +82,7 @@ end
 
 %% --- Obstacles ---
 if CONFIG.randomize_obstacles
-    nObs = 4;                            % Number of obstacles
+    nObs = 50;                            % Number of obstacles
     obs_pos = 8 * (2*rand(nObs,2) - 1);  % Randomized obstacle positions within workspace. Random positions in [-8,8]×[-8,8]
     obs_rad = 0.3 + 0.3*rand(nObs,1);    % Random radii between 0.3 and 0.6
 
