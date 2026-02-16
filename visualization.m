@@ -2,8 +2,8 @@
 % Run it AFTER executing the Simulink model...
 
 % ====== CONFIGURAZIONE SALVATAGGIO ======
-save_mode = "no save";  % Opzioni: "no save", "snapshots", "gif"
-save_interval = 0.25;      % Salva frame ogni N secondi (per snapshots e gif)
+save_mode = "no save";    % Opzioni: "no save", "snapshots", "gif"
+save_interval = 0.25;     % Salva frame ogni N secondi (per snapshots e gif)
 gif_frame_delay = 0.1;    % Delay tra frame nella GIF (in secondi)
 % =========================================
 
