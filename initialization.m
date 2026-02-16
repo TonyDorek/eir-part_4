@@ -5,7 +5,8 @@ clear;
 clc;
 close all;
 
-s = rng(12);             % Seed for the random number generation
+seed=12;
+s = rng(seed);             % Seed for the random number generation
 %s = rng('shuffle');
 
 %% --- Starting configuration ---
@@ -72,9 +73,9 @@ if CONFIG.randomize_goals
         fprintf('Random goal assigned to random outlier Robot %d\n', outlier_idx); % Debug info
     end
 else
-    x_goal = ones(N,1)*[0 -1];  % Fixed goal for all the robots
+    x_goal = ones(N,1)*[0 2];  % Fixed goal for all the robots
     if CONFIG.outlier_specific_goal
-        outlier_idx = 2; 
+        outlier_idx = 3; 
         x_goal(outlier_idx,:) = [0 -6];
         fprintf('Specific goal assigned to specific outlier Robot %d\n', outlier_idx);
     end
@@ -82,7 +83,7 @@ end
 
 %% --- Obstacles ---
 if CONFIG.randomize_obstacles
-    nObs = 50;                            % Number of obstacles
+    nObs = 42;                            % Number of obstacles
     obs_pos = 8 * (2*rand(nObs,2) - 1);  % Randomized obstacle positions within workspace. Random positions in [-8,8]×[-8,8]
     obs_rad = 0.3 + 0.3*rand(nObs,1);    % Random radii between 0.3 and 0.6
 

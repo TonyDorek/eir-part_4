@@ -1,5 +1,11 @@
-%% ANIMATION OF ROBOT DYNAMICS
+%% ANIMATION OF ROBOT DYNAMICS (WITH SNAPSHOT/GIF SAVING)
 % Run it AFTER executing the Simulink model...
+
+% ====== CONFIGURAZIONE SALVATAGGIO ======
+save_mode = "no save";  % Opzioni: "no save", "snapshots", "gif"
+save_interval = 0.25;      % Salva frame ogni N secondi (per snapshots e gif)
+gif_frame_delay = 0.1;    % Delay tra frame nella GIF (in secondi)
+% =========================================
 
 fig = figure;
 
@@ -15,6 +21,33 @@ t = (0:M-1)' * dt;   % [0, dt, 2dt, ..., (M-1)dt]
 % --- Re-shaping (or computing) lambda ---
 if opt_strategy == "Distributed"
     lambdaslog = reshape_log(lambdas);
+    
+    % -- REAL LAMBDA CALC even in this distributed case
+    lambda2_real = zeros(M,1);
+    for k = 1:M
+        Xk = squeeze(xlog(k,:,:));   % N x 2, position of all the agents at time k
+    
+        % Adjacency matrix based om distance and R_glob
+        Aconn = zeros(N);
+        for i = 1:N-1
+            for j = i+1:N
+                dist = norm2(Xk(i,:) - Xk(j,:));
+                if dist <= R_glob
+                    Aconn(i,j) = incmat_com(dist,R_glob);
+                    Aconn(j,i) = Aconn(i,j);
+                end
+            end
+        end
+    
+        % Laplacian and eigenvalues
+        L  = diag(sum(Aconn,2)) - Aconn;
+        ev = sort(eig(L));
+        if numel(ev) >= 2
+            lambda2_real(k) = ev(2);
+        else
+            lambda2_real(k) = 0;
+        end
+    end
 else
     lambda2_log = zeros(M,1);
     for k = 1:M
@@ -54,8 +87,50 @@ axis_ylim = [min(all_y) - margin, max(all_y) + margin];
 [uniqueRows, ~] = unique(x_goal, 'rows');
 hasDuplicateRows = size(uniqueRows, 1) < size(x_goal, 1);
 
+% ====== SAVE SETUP ======
+if save_mode ~= "no save"
+    % Make dir if there is no directory
+    script_dir = fileparts(mfilename('fullpath'));  % Directory dello script
+    if save_mode == "snapshots"
+        output_dir = fullfile(script_dir, 'simulation', 'snapshots');
+    else  % gif
+        output_dir = fullfile(script_dir, 'simulation', 'gifs');
+    end
+    
+    if ~exist(output_dir, 'dir')
+        mkdir(output_dir);
+    end
+    
+    % Outlier type
+    if CONFIG.outlier_random_goal
+        outlier_str = 'outRandom';
+    elseif CONFIG.outlier_specific_goal
+        outlier_str = 'outSpecific';
+    else
+        outlier_str = 'outNone';
+    end
+    
+    % Goal type
+    if CONFIG.randomize_goals
+        goal_str = 'goalRandom';
+    else
+        goal_str = 'goalUnified';
+    end
+    
+    % Filename build
+    base_filename = sprintf('%s_s%d_R%.1f_%s_%s_obs%d', ...
+        opt_strategy, s.Seed, R_glob, outlier_str, goal_str, nObs);
+    
+    % Gif Specific setup
+    if save_mode == "gif"
+        gif_filename = fullfile(output_dir, sprintf('%s.gif', base_filename));
+        gif_first_frame = true;
+        fprintf('GIF will be saved as:\n  %s\n\n', gif_filename);
+    end
+end
+
 % --- Start simulation ---
-fprintf("Simulation started!")
+fprintf("Simulation started!\n")
 
 for k = 1:M
     timestamp = (k-1)*dt;
@@ -125,6 +200,36 @@ for k = 1:M
             text(XK(i,1), XK(i,2)+0.3, label_str, 'FontSize', 10, 'HorizontalAlignment', 'center');
         end
         drawnow;
+        
+        % Save FRAME
+        if save_mode == "snapshots" && mod(timestamp, save_interval) == 0
+            % Format Timestamp string
+            timestamp_str = sprintf('%06.2f', timestamp);
+            timestamp_str = strrep(timestamp_str, '.', '_');  % Sostituisci . con _
+            
+            % full filename
+            filename = fullfile(output_dir, sprintf('%s_t%s.png', base_filename, timestamp_str));
+            
+            % Figure Save
+            exportgraphics(fig, filename, 'Resolution', 300);
+            fprintf('  Snapshot saved: %s\n', filename);
+            
+        elseif save_mode == "gif" && mod(timestamp, save_interval) == 0
+            % Frame capture
+            frame = getframe(fig);
+            im = frame2im(frame);
+            [imind, cm] = rgb2ind(im, 256);
+            
+            % GIF Write
+            if gif_first_frame
+                imwrite(imind, cm, gif_filename, 'gif', 'Loopcount', inf, 'DelayTime', gif_frame_delay);
+                gif_first_frame = false;
+                fprintf('  GIF frame 1 saved (t=%.2fs)\n', timestamp);
+            else
+                imwrite(imind, cm, gif_filename, 'gif', 'WriteMode', 'append', 'DelayTime', gif_frame_delay);
+                fprintf('  GIF frame added (t=%.2fs)\n', timestamp);
+            end
+        end
     end
 end
 
@@ -154,6 +259,13 @@ if opt_strategy == "Distributed"
 end    
 
 fprintf('\n✓ Simulation completed!!\n')
+if save_mode == "snapshots"
+    fprintf('✓ Snapshots saved in:\n  %s\n', output_dir);
+elseif save_mode == "gif"
+    fprintf('✓ GIF saved as:\n  %s\n', gif_filename);
+elseif save_mode == "no save"
+    fprintf('  (No files saved)\n');
+end
 
 %% PLOT VISUALIZATION
 
@@ -190,11 +302,30 @@ title(sprintf('%d-agents system - Velocity v_y evolution', N));
 legend('R1','R2','R3','R4','R5')
 
 % --- Plotting the global connectivity evolution ---
-figure;
-set(gcf, 'Position', [500, 600, 600, 400])
-plot(t, lambda2_log,'LineWidth',1.4);
-xlabel('time [s]'); ylabel('\lambda_2'); grid on;
-title('\lambda_2 (connectivity)');
+if opt_strategy == "Distributed"
+    % Double Plot
+    figure;
+    set(gcf, 'Position', [300, 300, 1200, 400])
+    
+    subplot(1, 2, 1);
+    plot(t, lambda2_log,'LineWidth',1.4, 'Color', 'r');
+    xlabel('time [s]'); ylabel('\lambda_2'); grid on;
+    title('\lambda_2 Distributed (consensus avg)');
+    
+    subplot(1, 2, 2);
+    plot(t, lambda2_real,'LineWidth',1.4);
+    xlabel('time [s]'); ylabel('\lambda_2'); grid on;
+    title('\lambda_2 Real ');
+    ylim([0, 1.2]); 
+else
+    % Single Plot
+    figure;
+    set(gcf, 'Position', [500, 300, 600, 400])
+    plot(t, lambda2_log,'LineWidth',1.4);
+    xlabel('time [s]'); ylabel('\lambda_2'); grid on;
+    title('\lambda_2 (connectivity)');
+    ylim([0, 1.2]); 
+end
 
 if opt_strategy == "Distributed"
     figure;

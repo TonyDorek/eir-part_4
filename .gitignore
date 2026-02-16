@@ -4,3 +4,5 @@
 *.autosave
 slprj/
 old/
+snapshots/
+gifs/
