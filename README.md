@@ -1,7 +1,7 @@
 # Multi-Robot Safety Control via Control Barrier Functions
 
 <p align="center">
-  <img src="img/Cover Gif.gif" alt="Multi-robot safety control simulation" width="75%" />
+  <img src="img/Cover%20Gif.gif" alt="Multi-robot safety control simulation" width="75%" />
 </p>
 
 <p align="center">
