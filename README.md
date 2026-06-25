@@ -1,7 +1,7 @@
 # Multi-Robot Safety Control via Control Barrier Functions
 
 <p align="center">
-  <img src="img/Cover%20Gif.gif" alt="Multi-robot safety control simulation" width="75%" />
+  <img src="img/COVER%20GIF.gif" alt="Multi-robot safety control simulation" width="75%" />
 </p>
 
 <p align="center">
@@ -11,8 +11,6 @@
   <img src="https://img.shields.io/badge/Course-EiR_Part_4-purple" alt="EiR Part 4" height="32" />
   <img src="https://img.shields.io/badge/Status-Simulation-yellow" alt="Simulation" height="32" />
 </p>
-
-*Gruppo Crollab — Elective in Robotics, MARR, Sapienza University of Rome*
 
 Project delivered for the 4th part of the **Elective in Robotics (EiR)** course — Master's in Artificial Intelligence & Robotics (MARR), Sapienza University of Rome.
 
