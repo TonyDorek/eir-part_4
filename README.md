@@ -8,11 +8,10 @@
   <img src="https://img.shields.io/badge/MATLAB-R2022b%2B-orange?logo=mathworks&logoColor=white" alt="MATLAB" height="32" />
   <img src="https://img.shields.io/badge/Simulink-R2022b%2B-orange?logo=mathworks&logoColor=white" alt="Simulink" height="32" />
   <img src="https://img.shields.io/badge/Optimization_Toolbox-required-blue" alt="Optimization Toolbox" height="32" />
-  <img src="https://img.shields.io/badge/Course-EiR_Part_4-purple" alt="EiR Part 4" height="32" />
   <img src="https://img.shields.io/badge/Status-Simulation-yellow" alt="Simulation" height="32" />
 </p>
 
-Project delivered for the 4th part of the **Elective in Robotics (EiR)** course — Master's in Artificial Intelligence & Robotics (MARR), Sapienza University of Rome.
+Project delivered for the 4th part of the **Elective in Robotics (EiR)** course — Master's in Artificial Intelligence & Robotics (MARR), Sapienza University of Rome. 
 
 ---
 
