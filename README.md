@@ -1,134 +1,231 @@
-# Analysis and Control of Multi-Robot Systems - Exam project
-Project delivered to complete the 4th part of the Elective in Robotics (EiR) course for the Master's degree in ARrtificial intelligence & Robotics (MARR) in Sapienza, University of Rome.
+# Multi-Robot Safety Control via Control Barrier Functions
+
+<p align="center">
+  <img src="img/Cover Gif.gif" alt="Multi-robot safety control simulation" width="75%" />
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/MATLAB-R2022b%2B-orange?logo=mathworks&logoColor=white" alt="MATLAB" height="32" />
+  <img src="https://img.shields.io/badge/Simulink-R2022b%2B-orange?logo=mathworks&logoColor=white" alt="Simulink" height="32" />
+  <img src="https://img.shields.io/badge/Optimization_Toolbox-required-blue" alt="Optimization Toolbox" height="32" />
+  <img src="https://img.shields.io/badge/Course-EiR_Part_4-purple" alt="EiR Part 4" height="32" />
+  <img src="https://img.shields.io/badge/Status-Simulation-yellow" alt="Simulation" height="32" />
+</p>
+
+*Gruppo Crollab — Elective in Robotics, MARR, Sapienza University of Rome*
+
+Project delivered for the 4th part of the **Elective in Robotics (EiR)** course — Master's in Artificial Intelligence & Robotics (MARR), Sapienza University of Rome.
+
+---
 
 ## Table of Contents
-- [Overview](#overview)
-- [Features](#features)
-- [Repository Structure](#repository-structure)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Simulink Model](#simulink-model)
-- [Examples](#examples)
 
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [Requirements](#requirements)
+- [Configuration](#configuration)
+- [Control Strategies](#control-strategies)
+- [Repository Structure](#repository-structure)
+- [Results](#results)
+- [References](#references)
+
+---
 
 ## Overview
-This project focuses on the concept of safety in the context of a multi-agent system. The target is achieved by using Control Barrier Functions (CBFs) in order to impose hard constraints in terms of collision avoidance (agent-agent and agent-obstacle along the path) and connectivity maintenance.
 
+This project addresses **safety in multi-agent systems** through **Control Barrier Functions (CBFs)**. A swarm of N robots (modeled as double integrators in 2D) must reach individual goal positions while satisfying three simultaneous hard constraints:
 
-## Features
-Each agent in the system is modeled with a double-integrator dynamics, the main objective is faced with different optimization approaches:
+- **Agent-agent collision avoidance** — robots must stay at least `dmin` apart
+- **Obstacle avoidance** — robots must clear all obstacles by a safety margin `rsafe`
+- **Connectivity maintenance** — the communication graph must remain connected (algebraic connectivity λ₂ > 0)
 
-- **Centralized** -> It computes joint accelerations for all agents using a single quadratic program (QP);
-- **Decentralized** -> It distributes computation across agents, each of which solves a local QP using only neighbor information;
-- **Distributed** -> It augments the decentralized controller with a local connectivity feedback term driven by the global connectivity metric &lambda;<sub>2</sub>; this factor is estimated by each agent through multi-hop communication and consensus mechanisms.
+Each constraint is encoded as a CBF and enforced via a **Quadratic Program (QP)** that minimally modifies a nominal PD controller to guarantee safety.
 
-Independently from the chosen approach, it is possible to set the initial agent positions, the goal position, the obstacle position or to randomize everything, including an outlier agent which will move and stay in disconnection from the swarm.
-<!---
-Differently from the first two approaches, where the agents start with a circular distribution and converges towards the same goal, in the third one, after the formation has reached a predefined level of connectivity, one robot (the outlier) attempts to move away from the formation to reach a different goal. This test is used to see the benefits of the global connectivity gain reinforcement &gamma;<sub>glob</sub> on the local controllers wrt standard decentralized approach.\
-Everything is released in MATLAB, with the development of custom scripts and functions ad hoc for the project.
--->
-  
+![System overview](img/sim_model.png)
 
-## Repository Structure
-The GitHub repo is mainly organized as:
+---
 
-eir-part_4/\
-│\
-|├── helpers/\
-| ├──[...]\
-| ├── cbf_centralized_step.m\
-| ├── cbf_decentralized_step.m\
-| ├── cbf_distributed_step.m\
-| └── [...]\
-│\
-|├── simulation/\
-| └── model.slx\
-│\
-|├── initialization.m\
-|├── visualization.m\
-|└── README.md
+## Quick Start
 
-In particular:
-- "initialization.m" script -> It sets the configurations, parameters and variables before running the model;
-- "visualization.m" script -> It plots the results of the model, from the animations to the output variables;
-- "helpers" subfolder -> It collects all the functions used in the program;
-- "simulation" subfolder -> It stores the Simulink model of the system.
+### Standard workflow (recommended)
 
-There are other accessory subfolders, like "img" and "report" (with the images in the .md file and the project report in PDF, respectively) that are not important in terms of software implementation.
+```matlab
+% 1. Open MATLAB and set this repository as current folder
+
+% 2. Open initialization.m, choose a strategy and run it
+%    (select opt_strategy at the bottom of the file)
+initialization
+
+% 3. Run the Simulink model
+%    Open simulation/model.slx and press Run, or:
+sim('simulation/model')
+
+% 4. Visualize results
+visualization
+```
+
+### Fast pipeline (one-shot)
+
+```matlab
+% Runs init → sim → visualization sequentially
+fast_pipeline
+```
+
+To switch strategy, change `opt_strategy` in `initialization.m` to one of:
+
+```matlab
+opt_strategy = "Centralized";    % or "Decentralized" or "Distributed"
+```
+
+---
 
 ## Requirements
-Here the mandatory requirements to set the proper environment:
 
-### MATLAB Version
-- MATLAB R2022b or higher
+| Requirement | Version |
+|---|---|
+| MATLAB | R2022b or higher |
+| Simulink | (included in most MATLAB bundles) |
+| Optimization Toolbox | Required for `quadprog` (QP solver) |
+| Image Processing Toolbox | Required for GIF export in `visualization.m` |
 
-### Plug-ins
-- Simulink
-- Optimization Toolbox
-- Image Processing Toolbox
+---
 
+## Configuration
 
-## Installation
-To set up the environment and run the program, follow the steps in order:
+All parameters are set in `initialization.m`. The most relevant ones:
 
-1. Clone/download the repository locally:
-   ```bash
-   git clone https://github.com/TonyDorek/eir-part_4.git
-   ```
-2. Open MATLAB and move to the cloned repository as current folder;
-3. Open the *initialization.m* script, select the desired optimization approach (variable 'opt_strategy', last line) and run it;
-4. Open the *model.slx* in Simulink and run the simulation;
-5. Open the *visualization.m* to see a simulation of the multi-agent system dynamics and to plot further results (state evolution, connectivity evolution etc.);
-7. To experiment another optimization strategy, restart from point 3.
+### Simulation
 
-<!---
-<u>Note</u>: in the *cbf_hybrid.m* script, to switch to the classic decentralized approach it is possible to deactivate the effects of the global gain (&gamma;<sub>glob</sub>) by uncommenting line 65. It is useful to compare it with the activated version (hybrid approach, commented line) and see the differences.
+| Parameter | Default | Description |
+|---|---|---|
+| `N` | `5` | Number of robots |
+| `Tsim` | `10` | Simulation duration (s) |
+| `dt` | `0.05` | Timestep (s) |
+
+### CBF constraints
+
+| Parameter | Default | Description |
+|---|---|---|
+| `R_glob` | `5.0` | Global communication radius |
+| `R_loc` | `R_glob × 0.8` | Max radius for connectivity constraint |
+| `dmin` | `1.0` | Min inter-robot distance |
+| `rsafe` | `0.25` | Safety margin over obstacle radius |
+| `Tpred` | `0.5` | Prediction horizon for obstacle avoidance |
+
+### Distributed approach only
+
+| Parameter | Default | Description |
+|---|---|---|
+| `lambda2_warn` | `2.0` | λ₂ threshold that triggers the global gain γ |
+| `k_lambda_glob` | `3.0` | Gain scaling factor for γ |
+| `gamma_max` | `4.0` | Saturation cap for γ |
+| `CONFIG.consensus_enabled` | `true` | Enable multi-hop λ₂ consensus |
+
+### Starting configuration flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `CONFIG.randomize_robots_initpos` | `true` | Randomize initial robot positions |
+| `CONFIG.randomize_goals` | `true` | Randomize goal positions |
+| `CONFIG.randomize_obstacles` | `true` | Randomize obstacle layout |
+| `CONFIG.outlier_random_goal` | `false` | Assign a diverging goal to a random robot |
+| `CONFIG.outlier_specific_goal` | `false` | Assign a diverging goal to robot 3 |
+
+---
+
+## Control Strategies
+
+Three optimization approaches are implemented and can be selected at runtime.
+
+### Centralized
+
+A single QP is solved for all N agents simultaneously. It has full global state information and yields the least-conservative solution, but does not scale and requires a central coordinator.
+
+| Last step | Connectivity (λ₂) |
+|:---------:|:-----------------:|
+| ![Centralized final](img/cen_final.png) | ![Centralized lambda](img/cen_lambda.png) |
+
+### Decentralized
+
+Each agent solves its own local QP using only **neighbor information** (robots within `R_glob`). No central coordinator is needed, but each agent has only partial knowledge of the graph so the connectivity constraint is enforced locally.
+
+| Last step | Connectivity (λ₂) |
+|:---------:|:-----------------:|
+| ![Decentralized final](img/decen_final.png) | ![Decentralized lambda](img/decen_lambda.png) |
+
+### Distributed
+
+Extends the decentralized approach with a **distributed estimate of the global algebraic connectivity λ₂**. Each agent:
+
+1. Estimates λ₂ from its local communication graph
+2. Refines the estimate via **multi-hop consensus** with neighbors (weighted average, outlier rejection)
+3. Blends own estimate with neighbor estimates using a confidence score
+4. Triggers a global gain γ when the estimated λ₂ drops below a warning threshold, reinforcing the connectivity constraint
+
+This allows every agent to react to global connectivity degradation without a central node.
+
+| Last step | Connectivity (λ₂) |
+|:---------:|:-----------------:|
+| ![Distributed final](img/dist_final.png) | ![Distributed lambda mean](img/dist_lambda_mean.png) |
+
+![Consensus average](img/dist_lambda_consensus_avg.png)
+
+---
+
+## Repository Structure
+
+```
+eir-part_4/
+│
+├── helpers/                        # All MATLAB functions
+│   ├── centralized_cbf_step.m      # QP solver — centralized
+│   ├── decentralized_cbf_step.m    # QP solver — decentralized
+│   ├── distributed_cbf_step.m      # QP solver — distributed
+│   ├── estimate_robot_positions.m  # Multi-hop position propagation
+│   ├── blend_estimate.m            # Confidence-weighted position blending
+│   ├── robust_consensus.m          # Outlier-robust λ₂ consensus
+│   ├── build_adjacency_matrix.m    # Graph construction from estimates
+│   ├── extrapolate_position.m      # Dead-reckoning for stale measurements
+│   ├── find_connected_component.m  # Graph connectivity utilities
+│   ├── incmat_com.m                # Incidence matrix computation
+│   ├── u_nom_fun.m                 # Nominal PD controller
+│   ├── norm2.m                     # Squared norm helper
+│   ├── reshape_log.m               # Simulink log post-processing
+│   ├── vecIdx.m                    # Index helper
+│   └── print_estimation_debug.m    # Debug printer
+│
+├── simulation/
+│   └── model.slx                   # Simulink model (5-agent system)
+│
+├── img/                            # Figures used in this README
+├── report/                         # PDF report and slides
+│
+├── initialization.m                # Sets all parameters, must run first
+├── visualization.m                 # Plots results and animations after simulation
+├── fast_pipeline.m                 # One-shot: init → simulate → visualize
+└── README.md
+```
+
+---
+
+## Results
+
+<!-- 
+    PLACEHOLDER — insert comparison figure here (e.g. side-by-side lambda evolution 
+    for all three strategies, or a table of final connectivity values)
 -->
-## Simulink Model
-A picture of the Simulink model is in the following:
 
-![Simulink - 5-agent system model](img/sim_model.png)
+Across all three strategies, the CBF constraints successfully prevent collisions and maintain connectivity throughout the simulation. The key trade-off is:
 
-The multi-agent system is composed by 5 robots, modeled on the left side (each of them represented with an independent double-integrator sub-block); all the state signals are collected in the central part through multiplexers that passed everything to the 3 controllers, each one for type of optimization; on the right side, a switch selects the output (actually the input) of the system related to the desired logic (one of the 3), before closing the loop with a feedback that takes this variable back to the 5 agents. Connected blocks are used to save relevant objects, like the state and the algebraic connectivity, in workspace for future processings.
+- **Centralized** gives the least-conservative trajectories (global QP), but is not scalable
+- **Decentralized** scales well but may be more conservative due to partial graph knowledge
+- **Distributed** recovers near-global awareness through consensus, allowing proactive connectivity reinforcement at the cost of additional communication overhead
 
-## Examples
-**Centralized case**\
-Main parameters:\
-Tsim = 10 -> Simulation time\
-N = 5 -> Number of agents\
-nObs = 4 -> Number of obstacles\
-x_goal = [0 -1] -> Nominal goal for the formation\
-R_glob = 5.0 -> Global communication radius (for neighborhood determination)\
-R_loc = 4.0 -> Maximum local communication radius (for connectivity constraint)\
-dmin = 1.0 -> Minimum distance between robots (for agent collision avoidance constraint)\
-rsafe = 0.25 -> Security margin over obstacle radius (for obstacle collision constraint).
+---
 
-Last simulation step:\
-![Centralized - Final system configuration](img/cen_final.png)\
-Connectivity trend:\
-![Centralized - &lambda; eigenvalue evolution](img/cen_lambda.png)
+## References
 
-**Decentralized case**\
-Same parameters.
-
-Last simulation step:\
-![Decentralized - Final system configuration](img/decen_final.png)\
-Connectivity trend:\
-![Decentralized - &lambda; eigenvalue evolution](img/decen_lambda.png)
-
-**Distributed case**\
-Same parameters and others more:\
-lambda2_eps = 0 -> Desired minimal global connectivity level\
-lambda2_warn  = 2.0 -> Warning threshold (under which triggering a global gain &gamma; that reinforces the local connectivity gain).
-
-Last simulation step:\
-![Distributed - Final system configuration](img/dist_final.png)\
-Connectivity trend:\
-![Distributed - mean &lambda; eigenvalue evolution](img/dist_lambda_mean.png)
-![Distributed - estimated &lambda; eigenvalue evolution](img/dist_lambda_single.png)
-
-The difference between estimation with or without consensus is that, in the latter case, each robot estimates &lambda; basing only on the knowledge acquired during motion, while in the first case this "personal" estimation is corrected with a weighted-&lambda; term coming from all the other agents. The mean value of these evolutions is then reported in the single plot above them.
-
-<!---
-In the last two cases, it is evident that a triggered global gain factor enforces a stronger connectivity (higher &lambda;, more stable formation, outlier more distant from its goal) than the unitary case with pure decentralization (smaller &lambda;, more unstable formation, outlier closer to its goal).
--->
+- A. D. Ames, X. Xu, J. W. Grizzle, P. Tabuada — *Control Barrier Function Based Quadratic Programs for Safety Critical Systems*, IEEE TAC 2017
+- M. Fiedler — *Algebraic connectivity of graphs*, Czechoslovak Mathematical Journal, 1973
+- M. M. Zavlanos, G. J. Pappas — *Controlling Connectivity of Dynamic Graphs*, IEEE CDC 2005
+- R. Olfati-Saber, R. M. Murray — *Consensus Problems in Networks of Agents with Switching Topology*, IEEE TAC 2004
